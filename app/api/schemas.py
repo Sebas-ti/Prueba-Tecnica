@@ -17,6 +17,12 @@ class ChatRequest(BaseModel):
         return v
 
 
+class FeedbackRequest(BaseModel):
+    interaction_id: str = Field(min_length=1, max_length=64)
+    rating: str = Field(pattern=r"^(up|down)$", description="'up' (👍) o 'down' (👎)")
+    comment: str | None = Field(default=None, max_length=500)
+
+
 class Source(BaseModel):
     ref: int
     source: str

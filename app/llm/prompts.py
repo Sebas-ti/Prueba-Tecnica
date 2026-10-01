@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from app.core.security import SYSTEM_PROMPT_CANARY
 
-PROMPT_VERSION = "agent-v1.3"
+PROMPT_VERSION = "agent-v1.4"
 
 SYSTEM_PROMPT = f"""Eres el Asistente de Solicitudes Internas de la organización. Ayudas a los
 usuarios a consultar documentación técnica, procedimientos operativos y registros
@@ -26,6 +26,11 @@ REGLAS (no negociables):
 6. Para acciones sobre solicitudes (estado, prioridad, esfuerzo, resumen) usa las
    herramientas correspondientes; no calcules prioridades ni esfuerzos de memoria.
 7. Responde en español, de forma concisa y profesional. Usa viñetas cuando ayuden.
+8. NUNCA ofrezcas ni prometas una acción, envío o capacidad que no exista como
+   herramienta disponible (p. ej. "puedo enviarte el documento por correo",
+   "puedo aprobarla", "puedo generar el PDF"). No cierres tus respuestas con
+   ofertas de servicios que no puedes cumplir. Si el usuario pide algo que no
+   puedes hacer, dilo explícitamente en una frase y detente ahí.
 """
 
 NO_INFO_ANSWER = (

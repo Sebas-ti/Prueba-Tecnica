@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 
 from app.agent.tools import TOOLS
 from app.api.deps import authenticate, get_app_settings, get_container, rate_limited
-from app.api.schemas import ChatRequest, ChatResponse, DocumentInfo, HistoryPage, IngestionResponse
+from app.api.schemas import ChatRequest, ChatResponse, DocumentInfo, FeedbackRequest, HistoryPage, IngestionResponse
 from app.config import Settings
 from app.container import Container
 from app.core.errors import AppError, BadRequestError, NotFoundError, PayloadTooLargeError, UnsupportedFileError
@@ -29,6 +30,18 @@ def chat(body: ChatRequest, client: str = Depends(rate_limited), c: Container = 
     evaluación de fundamentación y banderas de seguridad."""
     result = c.agent.run(body.question, session_id=body.session_id, user_id=client)
     return ChatResponse(**asdict(result))
+
+
+@router.post("/feedback", tags=["trazabilidad"], summary="Registrar feedback (👍/👎) sobre una interacción")
+def submit_feedback(body: FeedbackRequest, _: str = Depends(rate_limited), c: Container = Depends(get_container)):
+    """Cierra el ciclo de evaluación con usuarios reales: asocia un rating a una
+    interacción ya guardada en el historial (no crea una nueva)."""
+    record = c.history.get(body.interaction_id)
+    if not record:
+        raise NotFoundError(f"No existe la interacción {body.interaction_id}")
+    record["feedback"] = {"rating": body.rating, "comment": body.comment, "ts": datetime.now(UTC).isoformat()}
+    c.history.save(record)
+    return {"interaction_id": body.interaction_id, "feedback": record["feedback"]}
 
 
 # ------------------------------------------------------------ Documentos

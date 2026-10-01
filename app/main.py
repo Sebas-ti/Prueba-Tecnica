@@ -4,9 +4,11 @@ from __future__ import annotations
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.api.routes import router
 from app.config import Settings, get_settings
@@ -72,6 +74,12 @@ def create_app(settings: Settings | None = None, container: Container | None = N
     @app.get("/health", tags=["operación"], summary="Liveness")
     def health():
         return {"status": "ok"}
+
+    @app.get("/console", tags=["operación"], summary="Consola web de demostración", include_in_schema=False)
+    def console():
+        # Sirve la consola de chat desde el mismo origen que la API: evita necesitar
+        # CORS abierto para una demo (la consola es un extra no requerido por la prueba).
+        return FileResponse(Path(__file__).resolve().parent.parent / "web" / "chat_demo.html")
 
     @app.get("/ready", tags=["operación"], summary="Readiness")
     def ready(request: Request):

@@ -129,7 +129,7 @@ docs/             arquitectura, decisiones, seguridad, evaluación, AI-CDL, guio
 ```bash
 make test           # 63 pruebas
 make lint           # ruff (incluye reglas de seguridad)
-make eval           # dataset principal (33 casos) → eval/results/report.md
+make eval           # dataset principal (34 casos) → eval/results/report.md
 make eval-holdout   # set held-out (16 casos)        → eval/results/holdout/report.md
 ```
 

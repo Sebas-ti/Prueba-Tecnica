@@ -51,6 +51,14 @@ def test_redaction_of_pii_in_logs():
     assert "300 123 4567" not in out
 
 
+def test_redaction_of_phone_without_separators():
+    # Encontrado probando en vivo contra Azure: un celular de 10 dígitos corridos
+    # (sin "+", sin espacios) no calzaba con el regex original.
+    out = redact("Soy ana@empresa.com, cel 3001234567, ¿estado de la SOL-1006?")
+    assert "[EMAIL]" in out and "[PHONE]" in out
+    assert "3001234567" not in out
+
+
 def test_sanitize_strips_control_chars_and_truncates():
     assert sanitize_user_text("hola\x00\x07 mundo", 100) == "hola mundo"
     assert len(sanitize_user_text("a" * 5000, 2000)) == 2000

@@ -21,7 +21,10 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 _PII_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[EMAIL]"),
     (re.compile(r"\b(?:\d[ -]?){13,16}\b"), "[CARD]"),
-    (re.compile(r"(?<!\w)\+?\d{1,3}[ -]?\(?\d{3}\)?[ -]?\d{3}[ -]?\d{4}(?!\w)"), "[PHONE]"),
+    # El código de país es opcional como grupo completo (no solo el '+'): un
+    # celular de 10 dígitos sin separadores ("3001234567") también debe calzar,
+    # no solo variantes con "+57 300 123 4567" (encontrado probando en vivo).
+    (re.compile(r"(?<!\w)(?:\+?\d{1,3}[ -]?)?\(?\d{3}\)?[ -]?\d{3}[ -]?\d{4}(?!\w)"), "[PHONE]"),
     (re.compile(r"(?i)(api[_-]?key|password|secret|token)\s*[:=]\s*\S+"), r"\1=[REDACTED]"),
     (re.compile(r"\bsk-[A-Za-z0-9]{16,}\b"), "[REDACTED_KEY]"),
 ]

@@ -15,6 +15,7 @@ COPY --from=builder /install /usr/local
 COPY app ./app
 COPY scripts ./scripts
 COPY data ./data
+COPY web ./web
 RUN useradd --create-home --uid 10001 appuser && mkdir -p storage && chown -R appuser /app/storage
 USER appuser
 EXPOSE 8000

@@ -63,6 +63,23 @@ def test_history_endpoints(client):
     assert client.get("/v1/history/noexiste").status_code == 404
 
 
+def test_feedback_endpoint(client):
+    r = client.post("/v1/chat", json={"question": "¿Cuál es el estado de la SOL-1004?"}).json()
+    fb = client.post("/v1/feedback", json={"interaction_id": r["interaction_id"], "rating": "up"})
+    assert fb.status_code == 200, fb.text
+    assert fb.json()["feedback"]["rating"] == "up"
+    detail = client.get(f"/v1/history/{r['interaction_id']}").json()
+    assert detail["feedback"]["rating"] == "up"
+    assert client.post("/v1/feedback", json={"interaction_id": "noexiste", "rating": "up"}).status_code == 404
+    assert client.post("/v1/feedback", json={"interaction_id": r["interaction_id"], "rating": "maybe"}).status_code == 422
+
+
+def test_console_is_served(client):
+    r = client.get("/console")
+    assert r.status_code == 200
+    assert "Consola GESOL" in r.text
+
+
 def test_api_key_required_when_configured(tmp_path):
     s = make_settings(tmp_path, api_keys="clave-secreta-1,clave-2")
     with TestClient(create_app(s, Container.build(s))) as c:
