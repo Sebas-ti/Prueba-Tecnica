@@ -3,6 +3,8 @@ param name string
 param location string
 param tags object
 param principalId string
+@description('Opcional: objectId del desarrollador (Entra ID) para acceso desde su equipo.')
+param userPrincipalId string = ''
 param databaseName string = 'ragagent'
 param containerName string = 'interactions'
 @description('Retención de interacciones en segundos (política: 1 año).')
@@ -50,6 +52,17 @@ resource dataRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024
     roleDefinitionId: '${account.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
     scope: account.id
   }
+}
+
+resource devDataRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = if (!empty(userPrincipalId)) {
+  parent: account
+  name: guid(account.id, userPrincipalId, 'data-contributor')
+  properties: {
+    principalId: userPrincipalId
+    roleDefinitionId: '${account.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    scope: account.id
+  }
+  dependsOn: [ dataRole ] // Cosmos no admite asignaciones de rol concurrentes
 }
 
 output endpoint string = account.properties.documentEndpoint

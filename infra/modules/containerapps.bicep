@@ -48,6 +48,7 @@ var commonEnv = [
   { name: 'AZURE_CLIENT_ID', value: identityClientId } // DefaultAzureCredential -> identidad administrada
   { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
   { name: 'AZURE_OPENAI_CHAT_DEPLOYMENT', value: chatDeployment }
+  { name: 'AZURE_OPENAI_API_VERSION', value: '2025-04-01-preview' }
   { name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT', value: embeddingDeployment }
   { name: 'AZURE_SEARCH_ENDPOINT', value: searchEndpoint }
   { name: 'AZURE_SEARCH_INDEX', value: 'ic7-knowledge' }

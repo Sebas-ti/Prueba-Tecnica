@@ -54,8 +54,21 @@ def test_azure_llm_adapter_with_tool_loop(tmp_path, indexed_container):
     assert r.usage == {"prompt_tokens": 240, "completion_tokens": 60, "llm_calls": 2}
     first = client.chat.completions.requests[0]
     assert first["tool_choice"] == "auto" and len(first["tools"]) >= 2
+    # gpt-5-mini (por defecto) es de razonamiento: sin temperature ni max_tokens
+    assert "temperature" not in first and "max_tokens" not in first
+    assert first["reasoning_effort"] == "low" and first["max_completion_tokens"] > 0
     assert first["messages"][0]["role"] == "system"
     assert r.grounding["grounded"]
+
+
+def test_classic_model_uses_temperature_and_max_tokens(tmp_path):
+    settings = make_settings(tmp_path, llm_provider="azure", azure_openai_endpoint="https://fake.openai.azure.com",
+                             azure_openai_chat_deployment="gpt-4.1-mini")
+    client = fake_client()
+    AzureOpenAILLM(settings, client=client).chat([{"role": "user", "content": "hola"}])
+    req = client.chat.completions.requests[0]
+    assert req["temperature"] == 0.0 and req["max_tokens"] == settings.llm_max_tokens
+    assert "reasoning_effort" not in req
 
 
 def test_azure_embedder_normalizes_and_batches(tmp_path):

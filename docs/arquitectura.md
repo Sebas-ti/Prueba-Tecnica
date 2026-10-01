@@ -11,7 +11,7 @@ La solución es **una sola API FastAPI** desplegada en **Azure Container Apps** 
 | Capa | Responsabilidad | Implementación Azure | Implementación local |
 | --- | --- | --- | --- |
 | API | Contratos HTTP, validación, auth, rate limit, errores | Container Apps (+ API Management en prod) | `uvicorn` |
-| Agente | Bucle LLM ↔ herramientas, memoria de sesión, guardrails | Azure OpenAI `gpt-4o-mini` (function calling) | `LocalLLM` determinista |
+| Agente | Bucle LLM ↔ herramientas, memoria de sesión, guardrails | Azure OpenAI `gpt-5-mini` (function calling) | `LocalLLM` determinista |
 | RAG | Ingesta, chunking, embeddings, búsqueda híbrida, citas | Azure OpenAI `text-embedding-3-small` + Azure AI Search (híbrida + semántica) | Embeddings por hashing + numpy + BM25 (RRF) |
 | Herramientas | Reglas de negocio auditables sobre solicitudes | Mismo código | Mismo código |
 | Trazabilidad | Registro completo de cada interacción | Cosmos DB (serverless, TTL 1 año) | SQLite |
@@ -84,7 +84,7 @@ Infraestructura como código en [`infra/`](../infra) (Bicep, compila y pasa `bic
 | Recurso | Configuración destacada |
 | --- | --- |
 | Identidad administrada (user-assigned) | Única identidad de la app; roles mínimos por recurso |
-| Azure OpenAI | `disableLocalAuth: true`, `gpt-4o-mini` GlobalStandard, `text-embedding-3-small`, política de contenido `DefaultV2` |
+| Azure OpenAI | `disableLocalAuth: true`, `gpt-5-mini` GlobalStandard (gpt-4o-mini ya no se puede desplegar en suscripciones nuevas), `text-embedding-3-small`, política de contenido `DefaultV2` |
 | Azure AI Search (Basic) | `disableLocalAuth: true`, semantic ranker `free`, índice creado por la app |
 | Cosmos DB | Serverless, `disableLocalAuth: true`, partición `/session_id`, TTL 1 año, rol de datos built-in |
 | Key Vault | RBAC, purge protection, secretos referenciados desde Container Apps |

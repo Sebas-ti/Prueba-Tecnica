@@ -57,9 +57,11 @@ Formato breve tipo ADR: contexto → decisión → alternativas descartadas → 
 
 - OpenAI, AI Search y Cosmos con `disableLocalAuth: true`; la app usa `DefaultAzureCredential` con la identidad asignada (`AZURE_CLIENT_ID`). Los únicos secretos (API keys de clientes y cadena de App Insights) viven en Key Vault y llegan como *secret references*.
 
-## DT-11. `gpt-4o-mini` con temperatura 0
+## DT-11. `gpt-5-mini` con esfuerzo de razonamiento bajo
 
-- Suficiente para seguir instrucciones, hacer function calling y redactar con citas; costo y latencia bajos frente al presupuesto del piloto (1.500 USD/mes según el acta). Temperatura 0 para respuestas reproducibles. Cambiar a `gpt-4o`/`gpt-4.1` es solo un parámetro de despliegue si la evaluación lo justifica.
+- **Contexto**: `gpt-4o-mini` está en estado *Deprecated* en Azure: las suscripciones que nunca lo desplegaron ya no pueden crear deployments (se retira en abril de 2027).
+- **Decisión**: `gpt-5-mini` (GA) con `reasoning_effort=low`: suficiente para seguir instrucciones, hacer function calling y redactar con citas, con costo y latencia bajos frente al presupuesto del piloto (1.500 USD/mes según el acta).
+- **Compatibilidad**: el adaptador detecta modelos de razonamiento (sin `temperature`, con `max_completion_tokens`) y modelos clásicos (`temperature=0`, `max_tokens`); cambiar de modelo es solo un parámetro de despliegue (`CHAT_MODEL`). Ambos caminos tienen prueba (`tests/test_azure_adapters.py`).
 
 ## DT-12. Guardrails heurísticos + servicios gestionados
 

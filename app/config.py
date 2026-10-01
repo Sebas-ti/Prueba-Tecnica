@@ -31,8 +31,13 @@ class Settings(BaseSettings):
     # --- Azure OpenAI -------------------------------------------------------
     azure_openai_endpoint: str | None = None
     azure_openai_api_key: SecretStr | None = None  # vacío => Managed Identity
-    azure_openai_api_version: str = "2024-10-21"
-    azure_openai_chat_deployment: str = "gpt-4o-mini"
+    # 2025-04-01-preview soporta modelos de razonamiento (gpt-5*) en Chat Completions
+    azure_openai_api_version: str = "2025-04-01-preview"
+    azure_openai_chat_deployment: str = "gpt-5-mini"
+    # Modelos de razonamiento (gpt-5*, o*): sin temperature, usan max_completion_tokens.
+    # None => se detecta por el nombre del deployment.
+    azure_openai_reasoning_model: bool | None = None
+    reasoning_effort: Literal["minimal", "low", "medium", "high"] = "low"
     azure_openai_embedding_deployment: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536
 

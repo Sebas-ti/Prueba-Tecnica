@@ -115,7 +115,7 @@
   <!-- Right column Azure services -->
   <rect x="900" y="100" width="346" height="92" rx="10" class="az"/>
   <text x="916" y="126" class="h">Azure OpenAI</text>
-  <text x="916" y="146" class="t">gpt-4o-mini · function calling · temperatura 0</text>
+  <text x="916" y="146" class="t">gpt-5-mini · function calling · reasoning low</text>
   <text x="916" y="164" class="t">text-embedding-3-small (1536 dims)</text>
   <text x="916" y="182" class="s">Filtros de contenido DefaultV2 · solo Entra ID</text>
 

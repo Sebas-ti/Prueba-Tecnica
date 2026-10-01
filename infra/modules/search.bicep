@@ -3,6 +3,8 @@ param name string
 param location string
 param tags object
 param principalId string
+@description('Opcional: objectId del desarrollador (Entra ID) para acceso desde su equipo.')
+param userPrincipalId string = ''
 @allowed([ 'basic', 'standard' ])
 param sku string = 'basic'
 
@@ -39,6 +41,26 @@ resource serviceRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   properties: {
     principalId: principalId
     principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', serviceContributor)
+  }
+}
+
+resource devDataRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userPrincipalId)) {
+  name: guid(search.id, userPrincipalId, indexDataContributor)
+  scope: search
+  properties: {
+    principalId: userPrincipalId
+    principalType: 'User'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', indexDataContributor)
+  }
+}
+
+resource devServiceRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userPrincipalId)) {
+  name: guid(search.id, userPrincipalId, serviceContributor)
+  scope: search
+  properties: {
+    principalId: userPrincipalId
+    principalType: 'User'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', serviceContributor)
   }
 }

@@ -22,7 +22,7 @@ Asistente inteligente para el sistema legado de **gestión de solicitudes intern
 | Capacidad | Cómo |
 | --- | --- |
 | Consulta documental (RAG) | Ingesta de PDF/DOCX/MD/TXT → chunking por secciones → embeddings → búsqueda **híbrida** (vector + BM25, RRF) y re-ranker semántico en Azure AI Search → respuesta con citas `[n]` |
-| Agente con herramientas | Bucle de function calling (Azure OpenAI `gpt-4o-mini`) con 6 herramientas validadas por JSON Schema |
+| Agente con herramientas | Bucle de function calling (Azure OpenAI `gpt-5-mini`) con 6 herramientas validadas por JSON Schema |
 | Abstención | Umbral de relevancia + cobertura de términos → "No tengo información suficiente…" |
 | Seguridad | API key, rate limit, validación, detección de inyección directa e indirecta, canario anti-fuga del prompt, redacción de PII, sin claves en Azure (identidad administrada) |
 | Trazabilidad | Cada interacción guarda herramientas, argumentos, fuentes, groundedness, flags de seguridad, modelo, versión de prompt, tokens y latencia (Cosmos DB / SQLite) |

@@ -3,8 +3,11 @@ param name string
 param location string
 param tags object
 param principalId string
-param chatModel string = 'gpt-4o-mini'
-param chatModelVersion string = '2024-07-18'
+@description('Opcional: objectId del desarrollador (Entra ID) para acceso desde su equipo.')
+param userPrincipalId string = ''
+// gpt-4o-mini está en estado Deprecated: las suscripciones nuevas ya no pueden desplegarlo.
+param chatModel string = 'gpt-5-mini'
+param chatModelVersion string = '2025-08-07'
 param chatCapacity int = 30
 param embeddingModel string = 'text-embedding-3-small'
 param embeddingModelVersion string = '1'
@@ -51,6 +54,16 @@ resource roleUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   properties: {
     principalId: principalId
     principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', openAiUserRole)
+  }
+}
+
+resource roleDev 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userPrincipalId)) {
+  name: guid(openai.id, userPrincipalId, openAiUserRole)
+  scope: openai
+  properties: {
+    principalId: userPrincipalId
+    principalType: 'User'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', openAiUserRole)
   }
 }

@@ -285,7 +285,9 @@ class AzureSearchVectorStore:
 
     def delete_source(self, source: str) -> int:
         safe = source.replace("'", "''")
-        ids = [{"id": d["id"]} for d in self.client.search(search_text="*", filter=f"source eq '{safe}'", select=["id"])]
+        # top explícito: por defecto la búsqueda devuelve solo 50 resultados
+        ids = [{"id": d["id"]} for d in self.client.search(search_text="*", filter=f"source eq '{safe}'",
+                                                           select=["id"], top=1000)]
         if ids:
             self.client.delete_documents(ids)
         return len(ids)

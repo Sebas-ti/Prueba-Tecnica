@@ -19,9 +19,16 @@ param location string = resourceGroup().location
 @description('Región para Azure OpenAI (disponibilidad de modelos).')
 param openAiLocation string = location
 
+@description('Modelo de chat y versión (verifique disponibilidad en la región y cuota).')
+param chatModel string = 'gpt-5-mini'
+param chatModelVersion string = '2025-08-07'
+
 @description('API keys de clientes, separadas por coma. Se guardan en Key Vault.')
 @secure()
 param apiKeys string
+
+@description('Opcional: objectId de su usuario (az ad signed-in-user show --query id -o tsv).')
+param userPrincipalId string = ''
 
 param deployApp bool = false
 param image string = ''
@@ -42,17 +49,25 @@ module monitoring 'modules/monitoring.bicep' = {
 
 module openai 'modules/openai.bicep' = {
   name: 'openai'
-  params: { name: name, location: openAiLocation, tags: tags, principalId: identity.properties.principalId }
+  params: {
+    name: name
+    location: openAiLocation
+    tags: tags
+    principalId: identity.properties.principalId
+    chatModel: chatModel
+    chatModelVersion: chatModelVersion
+    userPrincipalId: userPrincipalId
+  }
 }
 
 module search 'modules/search.bicep' = {
   name: 'search'
-  params: { name: name, location: location, tags: tags, principalId: identity.properties.principalId }
+  params: { name: name, location: location, tags: tags, principalId: identity.properties.principalId, userPrincipalId: userPrincipalId }
 }
 
 module cosmos 'modules/cosmos.bicep' = {
   name: 'cosmos'
-  params: { name: name, location: location, tags: tags, principalId: identity.properties.principalId }
+  params: { name: name, location: location, tags: tags, principalId: identity.properties.principalId, userPrincipalId: userPrincipalId }
 }
 
 module keyvault 'modules/keyvault.bicep' = {

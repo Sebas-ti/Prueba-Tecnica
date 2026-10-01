@@ -29,21 +29,32 @@ def build_azure_openai_client(settings: Settings):
     return AzureOpenAI(azure_ad_token_provider=token_provider, **common)
 
 
+def is_reasoning_deployment(name: str) -> bool:
+    n = name.lower()
+    return n.startswith("gpt-5") or (len(n) > 1 and n[0] == "o" and n[1].isdigit())
+
+
 class AzureOpenAILLM:
     def __init__(self, settings: Settings, client=None):
         self.settings = settings
         self.client = client or build_azure_openai_client(settings)
         self.model_name = f"azure-openai:{settings.azure_openai_chat_deployment}"
+        flag = settings.azure_openai_reasoning_model
+        self.reasoning = is_reasoning_deployment(settings.azure_openai_chat_deployment) if flag is None else flag
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None) -> LLMResponse:
-        kwargs = dict(
-            model=self.settings.azure_openai_chat_deployment,
-            messages=messages,
-            temperature=self.settings.llm_temperature,
-            max_tokens=self.settings.llm_max_tokens,
-        )
+        kwargs: dict = dict(model=self.settings.azure_openai_chat_deployment, messages=messages)
+        if self.reasoning:
+            # Los modelos de razonamiento no aceptan temperature/max_tokens; el presupuesto
+            # incluye los tokens de razonamiento, por eso es mayor.
+            kwargs.update(max_completion_tokens=self.settings.llm_max_tokens * 4,
+                          reasoning_effort=self.settings.reasoning_effort)
+        else:
+            kwargs.update(temperature=self.settings.llm_temperature, max_tokens=self.settings.llm_max_tokens)
         if tools:
-            kwargs.update(tools=tools, tool_choice="auto", parallel_tool_calls=True)
+            kwargs.update(tools=tools, tool_choice="auto")
+            if not self.reasoning:
+                kwargs["parallel_tool_calls"] = True
         try:
             resp = self.client.chat.completions.create(**kwargs)
         except Exception as exc:

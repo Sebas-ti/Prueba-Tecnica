@@ -42,10 +42,12 @@ Estos defectos fueron introducidos por la IA y **detectados por las validaciones
 | 7 | Falsos positivos de RAG ("presupuesto de marketing 2027" respondía con el presupuesto del piloto de IA) | Pruebas exploratorias de preguntas fuera de dominio | Respuesta no fundamentada presentada como cierta |
 | 8 | Sobreajuste del dataset de evaluación (umbrales calibrados con las mismas preguntas) | Análisis del propio proceso | Métricas infladas presentadas al cliente |
 | 9 | Diagrama con textos desbordados | Render a PNG y revisión visual | Entregable poco profesional |
+| 10 | La IaC desplegaba `gpt-4o-mini`, que está *Deprecated*: las suscripciones nuevas ya no pueden crearlo | Verificación del calendario oficial de retiros de modelos antes de desplegar | Despliegue fallido en la suscripción del evaluador |
+| 11 | El historial en Cosmos intentaba crear base y contenedor al iniciar (no permitido con RBAC de plano de datos) y usaba `GROUP BY` entre particiones (no soportado por el SDK de Python) | Revisión de la documentación y del código fuente del SDK instalado | `/v1/history` y la readiness fallando solo en Azure |
 
 Riesgos generales del desarrollo asistido por IA que se gestionaron:
 
-- **APIs inventadas o desactualizadas** → verificación contra las versiones instaladas y pruebas del adaptador.
+- **APIs inventadas o desactualizadas** (incluido el conocimiento del modelo sobre qué versiones de modelos siguen disponibles) → verificación contra las versiones instaladas, la documentación oficial vigente y pruebas del adaptador.
 - **Código plausible pero inseguro** → reglas `S` de ruff, revisión de manejo de secretos, pruebas de autenticación y validación.
 - **Pruebas que validan la implementación en lugar del requisito** → los casos de prueba se derivan de los documentos de negocio (p. ej. el ejemplo de la guía de estimación).
 - **Exceso de confianza en métricas** → set *held-out* y declaración explícita de limitaciones.
