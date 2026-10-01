@@ -1,0 +1,15 @@
+# Dependencias de ejecución (versiones probadas)
+fastapi==0.142.2
+uvicorn[standard]==0.46.0
+pydantic==2.13.3
+pydantic-settings==2.14.0
+python-multipart==0.0.26
+numpy==2.4.4
+pypdf==6.19.0
+python-docx==1.2.0
+# Azure
+openai==3.22.1
+azure-identity==1.26.0
+azure-search-documents==12.0.0
+azure-cosmos==4.17.1
+azure-monitor-opentelemetry==1.8.10

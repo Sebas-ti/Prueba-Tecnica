@@ -1,0 +1,6 @@
+-r requirements.txt
+# Desarrollo, pruebas y evaluación
+pytest==9.1.1
+httpx==0.28.1
+reportlab==4.4.10
+ruff==0.16.9

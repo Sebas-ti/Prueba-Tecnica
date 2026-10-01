@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write # OIDC hacia Azure (federated credentials), sin secretos de larga duración
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check .
+      - name: Pruebas unitarias y de API
+        run: python -m pytest
+      - name: Quality gate de evaluación (modo local determinista)
+        run: python -m eval.run_eval --min-accuracy 90
+      - name: Validar Bicep
+        run: az bicep build --file infra/main.bicep --stdout > /dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval/results/
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-latest
+    environment: dev # requiere aprobación manual configurada en el environment de GitHub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Desplegar
+        env:
+          RAG_API_KEYS: ${{ secrets.RAG_API_KEYS }}
+        run: bash scripts/deploy_azure.sh "${{ vars.AZURE_RESOURCE_GROUP }}" "${{ vars.AZURE_LOCATION }}"
+      - name: Evaluación post-despliegue contra Azure (LLM real)
+        run: |
+          pip install -r requirements-dev.txt
+          API_URL=$(az deployment group show -g "${{ vars.AZURE_RESOURCE_GROUP }}" -n app --query properties.outputs.apiUrl.value -o tsv)
+          python -m eval.run_eval --api-url "$API_URL" --api-key "${{ secrets.EVAL_API_KEY }}" --min-accuracy 85

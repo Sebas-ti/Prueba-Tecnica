@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 860" width="1280" height="860" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3b4a5e"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f6cbd"/>
+    </marker>
+    <style>
+      .title { font-size: 22px; font-weight: 700; fill: #10223a; }
+      .subtitle { font-size: 13px; fill: #4a5b70; }
+      .h { font-size: 13px; font-weight: 700; fill: #10223a; }
+      .t { font-size: 11px; fill: #2b3a4d; }
+      .s { font-size: 10px; fill: #4a5b70; }
+      .w { font-size: 12px; font-weight: 600; fill: #ffffff; }
+      .lbl { font-size: 11px; fill: #3b4a5e; }
+      .lblb { font-size: 11px; fill: #0f6cbd; font-weight: 600; }
+      .box { fill: #ffffff; stroke: #c3d0de; stroke-width: 1.2; }
+      .az { fill: #eaf3fc; stroke: #0f6cbd; stroke-width: 1.4; }
+      .core { fill: #f4f8fc; stroke: #0f6cbd; stroke-width: 2; }
+      .mod { fill: #ffffff; stroke: #9fb6cf; stroke-width: 1; }
+      .guard { fill: #fff4e5; stroke: #d47500; stroke-width: 1.2; }
+      .tool { fill: #e9f7ef; stroke: #2e8b57; stroke-width: 1; }
+      .ext { fill: #f6f6f6; stroke: #8a8a8a; stroke-width: 1.2; stroke-dasharray: 5 4; }
+      .line { stroke: #3b4a5e; stroke-width: 1.4; fill: none; }
+      .lineb { stroke: #0f6cbd; stroke-width: 1.6; fill: none; }
+      .dash { stroke: #3b4a5e; stroke-width: 1.2; fill: none; stroke-dasharray: 5 4; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="860" fill="#fbfcfe"/>
+  <text x="32" y="40" class="title">Agente RAG empresarial sobre Azure — Arquitectura</text>
+  <text x="32" y="62" class="subtitle">Consulta documental (RAG híbrido) + herramientas sobre el sistema legado GESOL, con guardrails, trazabilidad y evaluación</text>
+
+  <!-- Clientes -->
+  <rect x="32" y="100" width="170" height="92" rx="10" class="box"/>
+  <text x="117" y="128" text-anchor="middle" class="h">Usuarios y</text>
+  <text x="117" y="146" text-anchor="middle" class="h">sistemas corporativos</text>
+  <text x="117" y="168" text-anchor="middle" class="s">Portal, Teams, apps</text>
+  <text x="117" y="182" text-anchor="middle" class="s">HTTPS + X-API-Key / JWT</text>
+
+  <!-- APIM (recomendado) -->
+  <rect x="32" y="230" width="170" height="84" rx="10" class="ext"/>
+  <text x="117" y="256" text-anchor="middle" class="h">API Management</text>
+  <text x="117" y="274" text-anchor="middle" class="s">(recomendado en prod)</text>
+  <text x="117" y="292" text-anchor="middle" class="s">Entra ID JWT, cuotas,</text>
+  <text x="117" y="306" text-anchor="middle" class="s">rate limiting, WAF</text>
+
+  <path d="M117,192 L117,228" class="line" marker-end="url(#arrow)"/>
+  <path d="M202,272 L262,272" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Core: Container Apps -->
+  <rect x="264" y="92" width="590" height="500" rx="14" class="core"/>
+  <text x="284" y="118" class="h">Azure Container Apps — API FastAPI (Python 3.11)</text>
+  <text x="284" y="136" class="s">Identidad administrada · escalado KEDA por concurrencia HTTP · logs a Log Analytics</text>
+
+  <!-- endpoints -->
+  <rect x="284" y="150" width="550" height="34" rx="6" class="mod"/>
+  <text x="300" y="172" class="t"><tspan font-weight="700">API v1</tspan>  /v1/chat · /v1/documents · /v1/history · /v1/tools · /health · /ready</text>
+
+  <!-- guard in -->
+  <rect x="284" y="194" width="550" height="40" rx="6" class="guard"/>
+  <text x="300" y="212" class="t"><tspan font-weight="700">Guardrails de entrada</tspan>: validación Pydantic, API key, rate limit</text>
+  <text x="300" y="227" class="t">prompt injection (Unicode + patrones ES/EN) → bloqueo antes del LLM</text>
+
+  <!-- agent -->
+  <rect x="284" y="244" width="550" height="180" rx="8" class="mod"/>
+  <text x="300" y="266" class="h">Agente orquestador</text>
+  <text x="300" y="284" class="s">Prompt versionado + canario · 3 turnos de sesión · bucle LLM ↔ herramientas (máx. 5)</text>
+
+  <rect x="300" y="296" width="170" height="54" rx="6" class="tool"/>
+  <text x="385" y="318" text-anchor="middle" class="t" font-weight="700">buscar_documentacion</text>
+  <text x="385" y="336" text-anchor="middle" class="s">RAG híbrido + citas [n]</text>
+
+  <rect x="478" y="296" width="170" height="54" rx="6" class="tool"/>
+  <text x="563" y="318" text-anchor="middle" class="t" font-weight="700">consultar_solicitud</text>
+  <text x="563" y="336" text-anchor="middle" class="s">estado e historial</text>
+
+  <rect x="656" y="296" width="170" height="54" rx="6" class="tool"/>
+  <text x="741" y="318" text-anchor="middle" class="t" font-weight="700">clasificar_prioridad</text>
+  <text x="741" y="336" text-anchor="middle" class="s">matriz P1–P4 + reglas</text>
+
+  <rect x="300" y="358" width="170" height="54" rx="6" class="tool"/>
+  <text x="385" y="380" text-anchor="middle" class="t" font-weight="700">calcular_esfuerzo</text>
+  <text x="385" y="398" text-anchor="middle" class="s">guía de estimación</text>
+
+  <rect x="478" y="358" width="170" height="54" rx="6" class="tool"/>
+  <text x="563" y="380" text-anchor="middle" class="t" font-weight="700">resumen_ejecutivo</text>
+  <text x="563" y="398" text-anchor="middle" class="s">estado + prioridad + riesgos</text>
+
+  <rect x="656" y="358" width="170" height="54" rx="6" class="tool"/>
+  <text x="741" y="380" text-anchor="middle" class="t" font-weight="700">recomendar_servicios</text>
+  <text x="741" y="398" text-anchor="middle" class="s">catálogo cloud aprobado</text>
+
+  <!-- guard out -->
+  <rect x="284" y="434" width="550" height="40" rx="6" class="guard"/>
+  <text x="300" y="452" class="t"><tspan font-weight="700">Guardrails de salida</tspan>: canario del prompt, patrones de secretos</text>
+  <text x="300" y="467" class="t">groundedness + validez de citas · abstención sin contexto</text>
+
+  <!-- trace -->
+  <rect x="284" y="484" width="250" height="92" rx="6" class="mod"/>
+  <text x="300" y="506" class="t" font-weight="700">Trazabilidad por interacción</text>
+  <text x="300" y="524" class="s">pregunta (PII redactada), respuesta,</text>
+  <text x="300" y="539" class="s">herramientas + argumentos, fuentes,</text>
+  <text x="300" y="554" class="s">groundedness, flags de seguridad,</text>
+  <text x="300" y="569" class="s">modelo, prompt, tokens, latencia</text>
+
+  <rect x="554" y="484" width="280" height="92" rx="6" class="mod"/>
+  <text x="570" y="506" class="t" font-weight="700">Puertos / adaptadores</text>
+  <text x="570" y="524" class="s">LLM: Azure OpenAI | local determinista</text>
+  <text x="570" y="539" class="s">Vector store: AI Search | numpy+BM25</text>
+  <text x="570" y="554" class="s">Historial: Cosmos DB | SQLite</text>
+  <text x="570" y="569" class="s">Solicitudes: legado | JSON mock</text>
+
+  <!-- Right column Azure services -->
+  <rect x="900" y="100" width="346" height="92" rx="10" class="az"/>
+  <text x="916" y="126" class="h">Azure OpenAI</text>
+  <text x="916" y="146" class="t">gpt-4o-mini · function calling · temperatura 0</text>
+  <text x="916" y="164" class="t">text-embedding-3-small (1536 dims)</text>
+  <text x="916" y="182" class="s">Filtros de contenido DefaultV2 · solo Entra ID</text>
+
+  <rect x="900" y="214" width="346" height="92" rx="10" class="az"/>
+  <text x="916" y="240" class="h">Azure AI Search</text>
+  <text x="916" y="260" class="t">Índice HNSW + BM25 (analizador es.microsoft)</text>
+  <text x="916" y="278" class="t">Búsqueda híbrida (RRF) + re-ranker semántico</text>
+  <text x="916" y="296" class="s">Umbral de relevancia → "no tengo información"</text>
+
+  <rect x="900" y="328" width="346" height="80" rx="10" class="az"/>
+  <text x="916" y="354" class="h">Azure Cosmos DB (NoSQL, serverless)</text>
+  <text x="916" y="374" class="t">Historial de interacciones · partición /session_id</text>
+  <text x="916" y="392" class="s">TTL = 1 año (política de retención de auditoría)</text>
+
+  <rect x="900" y="430" width="346" height="80" rx="10" class="ext"/>
+  <text x="916" y="456" class="h">Sistema legado GESOL</text>
+  <text x="916" y="476" class="t">Hoy: solicitudes.json (mock) vía RequestRepository</text>
+  <text x="916" y="494" class="s">Mañana: API REST / vista Oracle sin tocar el agente</text>
+
+  <!-- arrows core -> right -->
+  <path d="M854,146 L898,146" class="lineb" marker-end="url(#arrowBlue)"/>
+  <path d="M854,260 L898,260" class="lineb" marker-end="url(#arrowBlue)"/>
+  <path d="M854,368 L898,368" class="lineb" marker-end="url(#arrowBlue)"/>
+  <path d="M854,470 L898,470" class="line" marker-end="url(#arrow)"/>
+
+  <!-- Ingestion pipeline -->
+  <rect x="32" y="620" width="1214" height="104" rx="12" fill="#f3f7f2" stroke="#2e8b57" stroke-width="1.4"/>
+  <text x="52" y="646" class="h">Pipeline de ingesta</text>
+  <text x="52" y="664" class="s">POST /v1/documents o Container Apps Job</text>
+
+  <rect x="52" y="674" width="170" height="40" rx="6" class="box"/>
+  <text x="137" y="699" text-anchor="middle" class="t">PDF · DOCX · MD · TXT</text>
+  <rect x="252" y="674" width="200" height="40" rx="6" class="box"/>
+  <text x="352" y="692" text-anchor="middle" class="t">Validación (tipo, tamaño, firma)</text>
+  <text x="352" y="707" text-anchor="middle" class="s">extracción de texto</text>
+  <rect x="482" y="674" width="230" height="40" rx="6" class="box"/>
+  <text x="597" y="692" text-anchor="middle" class="t">Chunking por secciones + solape</text>
+  <text x="597" y="707" text-anchor="middle" class="s">tablas linealizadas · ids deterministas</text>
+  <rect x="742" y="674" width="210" height="40" rx="6" class="guard"/>
+  <text x="847" y="692" text-anchor="middle" class="t">Neutralizar inyección indirecta</text>
+  <text x="847" y="707" text-anchor="middle" class="s">en documentos</text>
+  <rect x="982" y="674" width="244" height="40" rx="6" class="box"/>
+  <text x="1104" y="692" text-anchor="middle" class="t">Embeddings → upsert en índice</text>
+  <text x="1104" y="707" text-anchor="middle" class="s">re-ingesta idempotente por fuente</text>
+  <path d="M222,694 L250,694" class="line" marker-end="url(#arrow)"/>
+  <path d="M452,694 L480,694" class="line" marker-end="url(#arrow)"/>
+  <path d="M712,694 L740,694" class="line" marker-end="url(#arrow)"/>
+  <path d="M952,694 L980,694" class="line" marker-end="url(#arrow)"/>
+  <path d="M1104,674 L1104,604 L1266,604 L1266,260 L1250,260" class="dash" marker-end="url(#arrow)"/>
+
+  <!-- Cross-cutting -->
+  <rect x="32" y="744" width="1214" height="92" rx="12" fill="#f7f4fb" stroke="#6b4fa1" stroke-width="1.2"/>
+  <text x="52" y="770" class="h">Transversal: seguridad, operación y entrega</text>
+  <rect x="52" y="782" width="220" height="42" rx="6" class="box"/>
+  <text x="162" y="800" text-anchor="middle" class="t" font-weight="700">Identidad administrada</text>
+  <text x="162" y="816" text-anchor="middle" class="s">Entra ID + RBAC mínimo, sin claves</text>
+  <rect x="290" y="782" width="220" height="42" rx="6" class="box"/>
+  <text x="400" y="800" text-anchor="middle" class="t" font-weight="700">Azure Key Vault</text>
+  <text x="400" y="816" text-anchor="middle" class="s">API keys · App Insights (refs)</text>
+  <rect x="528" y="782" width="230" height="42" rx="6" class="box"/>
+  <text x="643" y="800" text-anchor="middle" class="t" font-weight="700">App Insights + Log Analytics</text>
+  <text x="643" y="816" text-anchor="middle" class="s">OpenTelemetry · logs JSON · request_id</text>
+  <rect x="776" y="782" width="210" height="42" rx="6" class="box"/>
+  <text x="881" y="800" text-anchor="middle" class="t" font-weight="700">Container Registry</text>
+  <text x="881" y="816" text-anchor="middle" class="s">az acr build · pull con identidad</text>
+  <rect x="1004" y="782" width="222" height="42" rx="6" class="box"/>
+  <text x="1115" y="800" text-anchor="middle" class="t" font-weight="700">Bicep + GitHub Actions</text>
+  <text x="1115" y="816" text-anchor="middle" class="s">IaC · tests · quality gate de evaluación</text>
+</svg>

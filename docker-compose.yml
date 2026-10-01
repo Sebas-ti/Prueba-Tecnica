@@ -1,0 +1,31 @@
+# Ejecución local con Docker. Por defecto usa el modo local (sin credenciales).
+# Para usar Azure, complete .env (ver .env.example) y cambie los *_PROVIDER.
+services:
+  api:
+    build: .
+    image: ic7-rag-agent:local
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+    volumes:
+      - rag-storage:/app/storage
+    restart: unless-stopped
+
+  # Ingesta inicial del corpus (se ejecuta y termina)
+  ingest:
+    image: ic7-rag-agent:local
+    depends_on: [api]
+    command: ["python", "-m", "scripts.ingest"]
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - rag-storage:/app/storage
+    profiles: ["setup"]
+
+volumes:
+  rag-storage:

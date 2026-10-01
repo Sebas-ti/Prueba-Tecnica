@@ -1,0 +1,106 @@
+[
+  {
+    "categoria": "Cómputo para APIs y microservicios en contenedores",
+    "azure": "Azure Container Apps",
+    "aws": "Amazon ECS con AWS Fargate",
+    "caso_de_uso": "Exponer APIs REST y servicios en contenedores con escalado automático, incluso a cero.",
+    "palabras_clave": ["api", "apis", "contenedores", "microservicios", "backend", "docker", "aplicacion web", "servidor de aplicaciones", "weblogic", "computo"],
+    "consideraciones": "Usar identidad administrada, ingress interno y revisiones para despliegues blue/green."
+  },
+  {
+    "categoria": "Cómputo serverless orientado a eventos",
+    "azure": "Azure Functions",
+    "aws": "AWS Lambda",
+    "caso_de_uso": "Procesos cortos disparados por eventos: notificaciones, transformaciones, webhooks.",
+    "palabras_clave": ["serverless", "eventos", "funciones", "notificaciones", "webhook", "trigger"],
+    "consideraciones": "Cuidar tiempos de ejecución máximos y arranque en frío."
+  },
+  {
+    "categoria": "Orquestación de procesos batch",
+    "azure": "Azure Container Apps Jobs / Azure Data Factory",
+    "aws": "AWS Batch / AWS Step Functions",
+    "caso_de_uso": "Reemplazar procesos batch con cron (como JOB_CIERRE_DIARIO) por jobs programados, observables y con reintentos.",
+    "palabras_clave": ["batch", "cron", "nocturno", "job", "programado", "cierre", "etl", "orquestacion"],
+    "consideraciones": "Diseñar los jobs idempotentes para permitir reintentos seguros."
+  },
+  {
+    "categoria": "Base de datos relacional gestionada",
+    "azure": "Azure Database for PostgreSQL Flexible Server / Azure SQL Database",
+    "aws": "Amazon RDS for PostgreSQL / Amazon Aurora",
+    "caso_de_uso": "Migrar la base de datos Oracle a un motor relacional gestionado con alta disponibilidad y respaldos automáticos.",
+    "palabras_clave": ["base de datos", "oracle", "relacional", "sql", "postgresql", "respaldo", "tablespace", "transaccional"],
+    "consideraciones": "Evaluar dependencias de PL/SQL; usar herramientas de migración (Azure DMS / AWS DMS)."
+  },
+  {
+    "categoria": "Base de datos NoSQL para historial y trazabilidad",
+    "azure": "Azure Cosmos DB for NoSQL",
+    "aws": "Amazon DynamoDB",
+    "caso_de_uso": "Guardar historial de interacciones, sesiones y eventos con baja latencia y TTL.",
+    "palabras_clave": ["nosql", "historial", "trazabilidad", "sesiones", "auditoria", "eventos", "logs de interacciones"],
+    "consideraciones": "Elegir bien la clave de partición; usar TTL para cumplir retención."
+  },
+  {
+    "categoria": "Almacenamiento de documentos y adjuntos",
+    "azure": "Azure Blob Storage",
+    "aws": "Amazon S3",
+    "caso_de_uso": "Almacenar adjuntos y documentos con cifrado en reposo, versionado y políticas de ciclo de vida.",
+    "palabras_clave": ["adjuntos", "archivos", "documentos", "nfs", "almacenamiento", "storage", "blob", "cifrado"],
+    "consideraciones": "Acceso privado mediante private endpoints; ciclo de vida a capa fría/archivo."
+  },
+  {
+    "categoria": "Búsqueda y recuperación para RAG",
+    "azure": "Azure AI Search",
+    "aws": "Amazon OpenSearch Service / Amazon Kendra",
+    "caso_de_uso": "Búsqueda híbrida (texto + vectores) y re-ranking semántico sobre documentos y solicitudes.",
+    "palabras_clave": ["busqueda", "buscar", "rag", "vectores", "embeddings", "indice", "texto completo", "consulta"],
+    "consideraciones": "Usar analizador en español y re-ranking semántico; seguridad a nivel de documento si aplica."
+  },
+  {
+    "categoria": "Modelos de IA generativa",
+    "azure": "Azure OpenAI Service (Azure AI Foundry)",
+    "aws": "Amazon Bedrock",
+    "caso_de_uso": "Asistentes, resúmenes, clasificación y agentes con function calling.",
+    "palabras_clave": ["ia", "ia generativa", "llm", "asistente", "agente", "chatbot", "resumen", "gpt", "inteligencia artificial"],
+    "consideraciones": "Acceso privado, filtros de contenido, Prompt Shields y monitoreo de tokens."
+  },
+  {
+    "categoria": "Gestión y exposición de APIs",
+    "azure": "Azure API Management",
+    "aws": "Amazon API Gateway",
+    "caso_de_uso": "Publicar APIs con autenticación, cuotas, rate limiting, versionado y portal de desarrolladores.",
+    "palabras_clave": ["api gateway", "exponer", "integracion", "integraciones", "rate limiting", "cuotas", "rest", "soap"],
+    "consideraciones": "Centralizar políticas de seguridad; validar JWT de Entra ID."
+  },
+  {
+    "categoria": "Integración y mensajería",
+    "azure": "Azure Service Bus / Azure Logic Apps",
+    "aws": "Amazon SQS / Amazon EventBridge",
+    "caso_de_uso": "Desacoplar integraciones entre sistemas (por ejemplo RR. HH. y GESOL) con colas y eventos.",
+    "palabras_clave": ["integracion", "integraciones", "mensajeria", "colas", "eventos", "sap", "desacoplar", "sincronizacion"],
+    "consideraciones": "Diseñar mensajes idempotentes y colas de mensajes fallidos (dead-letter)."
+  },
+  {
+    "categoria": "Identidad y autenticación",
+    "azure": "Microsoft Entra ID",
+    "aws": "AWS IAM Identity Center / Amazon Cognito",
+    "caso_de_uso": "Autenticación SSO con MFA y autorización por roles para aplicaciones modernizadas.",
+    "palabras_clave": ["identidad", "autenticacion", "mfa", "ldap", "directorio activo", "sso", "accesos", "login"],
+    "consideraciones": "Reemplazar LDAP por OIDC; usar identidades administradas para servicios."
+  },
+  {
+    "categoria": "Gestión de secretos",
+    "azure": "Azure Key Vault",
+    "aws": "AWS Secrets Manager",
+    "caso_de_uso": "Almacenar y rotar secretos, certificados y llaves.",
+    "palabras_clave": ["secretos", "certificados", "llaves", "contraseñas", "rotacion", "key vault"],
+    "consideraciones": "Alertas de vencimiento de certificados (lección del INC-2024-052)."
+  },
+  {
+    "categoria": "Observabilidad y monitoreo",
+    "azure": "Azure Monitor + Application Insights + Log Analytics",
+    "aws": "Amazon CloudWatch + AWS X-Ray",
+    "caso_de_uso": "Logs centralizados, trazas distribuidas, métricas y alertas.",
+    "palabras_clave": ["monitoreo", "logs", "observabilidad", "alertas", "metricas", "trazas", "capacidad"],
+    "consideraciones": "Definir alertas de capacidad y SLOs; dashboards de negocio."
+  }
+]
