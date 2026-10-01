@@ -19,6 +19,9 @@ param location string = resourceGroup().location
 @description('Región para Azure OpenAI (disponibilidad de modelos).')
 param openAiLocation string = location
 
+@description('Región para Azure AI Search (capacidad del SKU puede variar por región).')
+param searchLocation string = location
+
 @description('Modelo de chat y versión (verifique disponibilidad en la región y cuota).')
 param chatModel string = 'gpt-5-mini'
 param chatModelVersion string = '2025-08-07'
@@ -62,7 +65,7 @@ module openai 'modules/openai.bicep' = {
 
 module search 'modules/search.bicep' = {
   name: 'search'
-  params: { name: name, location: location, tags: tags, principalId: identity.properties.principalId, userPrincipalId: userPrincipalId }
+  params: { name: name, location: searchLocation, tags: tags, principalId: identity.properties.principalId, userPrincipalId: userPrincipalId }
 }
 
 module cosmos 'modules/cosmos.bicep' = {

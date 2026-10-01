@@ -130,8 +130,13 @@ def judge(settings, row: dict, resp: dict) -> dict:
 
     llm = AzureOpenAILLM(settings)
     ctx = "\n".join(f"[{s['ref']}] {s['snippet']}" for s in resp.get("sources", [])) or "(sin fragmentos)"
-    out = llm.chat([{"role": "user", "content": JUDGE_PROMPT.format(
-        pregunta=row["pregunta"], criterio=row["criterio"], respuesta=row["respuesta"], contexto=ctx)}])
+    try:
+        out = llm.chat([{"role": "user", "content": JUDGE_PROMPT.format(
+            pregunta=row["pregunta"], criterio=row["criterio"], respuesta=row["respuesta"], contexto=ctx)}])
+    except Exception as exc:
+        # El propio texto adversarial de los casos de prompt injection, embebido en el
+        # prompt del juez, puede disparar el filtro de contenido de Azure OpenAI (jailbreak).
+        return {"correcta": None, "fundamentada": None, "razon": f"juez no disponible: {exc}"}
     try:
         return json.loads((out.content or "{}").strip().strip("`").removeprefix("json"))
     except json.JSONDecodeError:

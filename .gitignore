@@ -15,6 +15,9 @@ venv/
 storage/
 eval/results/*.tmp.json
 
+# Documentos externos para demo de ingesta (no son parte del corpus calibrado ni se versionan)
+data/docs_demo_external/
+
 # IDE / SO
 .vscode/
 .idea/
