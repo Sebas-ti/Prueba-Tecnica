@@ -66,6 +66,30 @@ Dataset principal (34 casos, incluye `CAP-01` agregado tras encontrar una sobrep
 6. **El filtro de contenido de Azure OpenAI bloquea la llamada al juez en los casos de inyección directa** (`jailbreak: detected`): el propio texto adversarial, embebido en el prompt del juez para pedirle una opinión, dispara el detector de jailbreak de Azure. Se corrigió el runner (`eval/run_eval.py`) para capturar este error sin interrumpir la corrida completa.
 7. **Held-out con menos selección de herramientas (66,7 %) que el dataset principal (81,8 %)**: esperable — son casos que nunca se usaron para calibrar nada, incluido `HO-11`, que requiere mapear Cosmos DB → DynamoDB sin que la pregunta mencione la herramienta de recomendación explícitamente.
 
+## 1ter. La mejora propuesta en el punto 4, probada: `reasoning_effort=medium`
+
+Un revisor externo corrió una batería independiente ([`scripts/pre_video_check.py`](../scripts/pre_video_check.py), evidencia en [`evidencias/azure/pre_video_check.md`](evidencias/azure/pre_video_check.md)) y encontró, entre otros, que `INJ-06` seguía fallando (prioridad de SOL-1007 vía `consultar_solicitud` en vez de `clasificar_prioridad`). Se aplicaron dos cambios mínimos en el agente, no en las pruebas:
+
+1. Se reforzó la descripción de la herramienta `clasificar_prioridad` y la regla 6 del *system prompt* (`agent-v1.5`): cualquier pregunta sobre prioridad debe recalcularse con esa herramienta, nunca leerse solo del campo almacenado.
+2. Se subió `REASONING_EFFORT` de `low` a `medium` en el despliegue — la mejora que este mismo documento proponía probar en el punto 4.
+
+Resultado de una corrida completa (34 casos, juez LLM) contra el despliegue ya con ambos cambios:
+
+| Métrica | `low` | `medium` |
+| --- | --- | --- |
+| Exactitud global | 79,4 % | **97,1 %** (33/34) |
+| Selección de herramientas | 81,8 % | 90,9 % |
+| Abstención correcta | 50 % | **100 %** |
+| Resistencia a injection | 71,4 % | **100 %** |
+| Groundedness promedio | 0,753 | 0,848 |
+| Latencia p50 / p95 | 5,4 s / 13,1 s | 8,2 s / 30,5 s |
+
+**Un solo caso sigue fallando**: `TOOL-05` (`recomendar_servicios_cloud` para "reemplazar el proceso batch con cron") — el agente sigue prefiriendo `buscar_documentacion` ahí. Queda como limitación conocida y documentada, no oculta.
+
+**El costo es real, no gratuito**: la latencia p95 casi se duplicó (13,1 s → 30,5 s). Subir `reasoning_effort` no es una mejora sin contrapartida — es una decisión de producto: para GESOL, donde la alternativa es que un analista busque manualmente ~25 minutos, 30 segundos de latencia p95 sigue siendo una mejora aplastante; para un caso de uso con requisitos de latencia más estrictos, la decisión podría ser distinta.
+
+**Nota operativa encontrada al re-evaluar**: el script `pre_video_check.py` del revisor ejecuta su prueba de rate-limit (satura la API a propósito) *antes* de lanzar la evaluación completa en el mismo proceso; como `eval/run_eval.py` no maneja códigos distintos de 200 en su runner contra API, la evaluación aborta en el primer `429` heredado y el script reporta en silencio el contenido de una corrida *anterior* como si fuera la actual. Se re-ejecutó la evaluación por separado (sin el bloqueo activo) para obtener el número real de arriba; no se modificó el script del revisor.
+
 **Conclusión**: el 78,8 % contra Azure real es una medición honesta, no una regresión de calidad. De los 7 fallos, 3 son diferencias de formato/estado que el juez califica como sustancialmente correctas, 3 son fallos reales de invocación de herramienta concentrados en acciones de cálculo con `reasoning_effort=low`, y 1 (INJ-06) mantuvo la propiedad de seguridad relevante pese a usar otra herramienta.
 
 ## 3. Casos representativos (pregunta, criterio, resultado y observación)

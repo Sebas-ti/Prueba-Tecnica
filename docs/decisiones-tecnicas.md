@@ -60,7 +60,8 @@ Formato breve tipo ADR: contexto → decisión → alternativas descartadas → 
 ## DT-11. `gpt-5-mini` con esfuerzo de razonamiento bajo
 
 - **Contexto**: `gpt-4o-mini` está en estado *Deprecated* en Azure: las suscripciones que nunca lo desplegaron ya no pueden crear deployments (se retira en abril de 2027).
-- **Decisión**: `gpt-5-mini` (GA) con `reasoning_effort=low`: suficiente para seguir instrucciones, hacer function calling y redactar con citas, con costo y latencia bajos frente al presupuesto del piloto (1.500 USD/mes según el acta).
+- **Decisión inicial**: `gpt-5-mini` (GA) con `reasoning_effort=low`, por costo y latencia bajos frente al presupuesto del piloto (1.500 USD/mes según el acta).
+- **Revisión con datos reales**: la evaluación formal contra Azure (`docs/evaluacion.md`, sección 1bis) mostró que `low` falla en selección de herramientas (81,8 %), abstención (50 %) e inyección indirecta (71,4 %). Se midió `reasoning_effort=medium` con el mismo dataset: **exactitud 97,1 % (vs. 79,4 %)**, a cambio de casi duplicar la latencia p95 (13,1 s → 30,5 s). Se adoptó `medium` como configuración de despliegue: para este caso de uso (alternativa: 25 min de búsqueda manual) el costo de latencia es claramente preferible al de respuestas incorrectas.
 - **Compatibilidad**: el adaptador detecta modelos de razonamiento (sin `temperature`, con `max_completion_tokens`) y modelos clásicos (`temperature=0`, `max_tokens`); cambiar de modelo es solo un parámetro de despliegue (`CHAT_MODEL`). Ambos caminos tienen prueba (`tests/test_azure_adapters.py`).
 
 ## DT-12. Guardrails heurísticos + servicios gestionados

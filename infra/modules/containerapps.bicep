@@ -49,6 +49,9 @@ var commonEnv = [
   { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
   { name: 'AZURE_OPENAI_CHAT_DEPLOYMENT', value: chatDeployment }
   { name: 'AZURE_OPENAI_API_VERSION', value: '2025-04-01-preview' }
+  // low daba 79,4% de exactitud en la evaluación formal (docs/evaluacion.md, 1ter);
+  // medium sube a 97,1% a cambio de ~2x la latencia p95 — tradeoff aceptado.
+  { name: 'REASONING_EFFORT', value: 'medium' }
   { name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT', value: embeddingDeployment }
   { name: 'AZURE_SEARCH_ENDPOINT', value: searchEndpoint }
   { name: 'AZURE_SEARCH_INDEX', value: 'ic7-knowledge' }
