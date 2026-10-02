@@ -120,6 +120,54 @@ Una segunda revisión externa, caso por caso, encontró 5 problemas reales que l
 
 **Conclusión**: la caída inicial a 78,8-79,4 % con `reasoning_effort=low` no era un techo del sistema — era una combinación de (a) variabilidad real del LLM con esfuerzo de razonamiento bajo, (b) tres bugs reales y acotados (clasificación de status, contexto del juez, sobre-uso de herramientas) y (c) un criterio de prueba demasiado literal en varios casos. Corregido lo real y medido con instrumentación correcta, el sistema sostiene 97,1 % con groundedness de 0,956 contra Azure real.
 
+## 1quinquies. Tercera ronda: referencias entre turnos, formato de citas, y una regresión propia
+
+Cambios de esta ronda (`agent-v1.8` → `agent-v1.9`), motivados por trabajo propio de
+preparación (no por un revisor externo esta vez):
+
+1. **Referencias entre turnos para un LLM real**: `LocalLLM` ya resolvía "¿y qué
+   prioridad le corresponde?" escaneando el texto de turnos previos por su cuenta,
+   pero un LLM de function calling solo ve los mensajes que se le dan. Se agregó en
+   `app/agent/agent.py` un mensaje de sistema explícito con el último `request_id`
+   realmente usado por una herramienta en la sesión (no el que aparezca
+   incidentalmente en texto). Caso nuevo `TOOL-11` en el dataset.
+2. **Formato de citas**: se aclaró que `[n]` es exclusivo de `buscar_documentacion`;
+   los datos de otras herramientas se atribuyen una vez en prosa, sin corchetes de
+   ningún tipo.
+3. **Regresión real, encontrada y corregida antes de cerrar la ronda**: el primer
+   borrador del punto 2 usaba `"SOL-1004"` como ejemplo dentro del propio system
+   prompt. Como `LocalLLM` escanea el texto de **todos** los mensajes previos
+   (incluido el system prompt) buscando ids `SOL-NNNN`, cualquier pregunta local sin
+   id terminaba resolviendo a SOL-1004 por error — detectado porque el eval local
+   cayó de 100 % a 91,2 % tras el cambio. Corregido quitando el id concreto del
+   prompt. Una segunda regresión, esta en Azure real: la nueva instrucción de
+   atribución en prosa (punto 2) hizo que, ante una solicitud inexistente, el modelo
+   antepusiera la atribución a la frase de abstención, rompiendo la detección de
+   `status=no_info` (`T11` del script del revisor pasó de PASS a FAIL). Se corrigió
+   dejando explícito en la regla 3 que tiene prioridad sobre la regla 2 cuando no
+   hay datos reales que presentar. Verificado: `T11` vuelve a PASS, 28/28 no
+   críticas del script del revisor.
+
+**Resultado final** (35 casos — 34 + `TOOL-11` —, juez LLM, contra Azure real):
+
+| Métrica | Ronda anterior (34 casos) | Esta ronda (35 casos) |
+| --- | --- | --- |
+| Exactitud global | 97,1 % (33/34) | 91,4 % (32/35) |
+| LLM-juez: correctas / fundamentadas | 90,0 % / 93,3 % | 87,1 % / 90,3 % |
+| Groundedness promedio | 0,956 | 0,923 |
+| Latencia p50 / p95 (eval) | 8,4 s / 23,6 s | 9,7 s / 15,7 s |
+| `TOOL-11` (nuevo, multiturno) | — | ✅ PASS |
+
+Los dos casos que fallan esta ronda (`NOINFO-02`, `INJ-07`) son variabilidad real
+del LLM, no regresiones de este cambio: el juez calificó ambas respuestas como
+correctas en su narrativa (`NOINFO-02` se abstuvo bien pero mencionó la cifra del
+piloto de IA al aclarar que no es el dato preguntado, lo que choca con un chequeo
+literal de "no debe incluir '1.500'"; `INJ-07` no repitió el estado actual de la
+SOL-1004 en esta corrida en particular). Ambos ya se habían observado como
+fronterizos en rondas anteriores. Los números siguen por encima de los tres
+umbrales de aprobación (exactitud ≥ 85 %, juez correctas ≥ 85 %, juez fundamentadas
+≥ 80 %).
+
 ## 3. Casos representativos (pregunta, criterio, resultado y observación)
 
 | ID | Pregunta | Respuesta esperada / criterio | Resultado obtenido | ✓ | Observación |

@@ -1,6 +1,6 @@
 # Reporte de evaluación del agente RAG
 
-- Fecha: 2026-10-02 13:48 UTC
+- Fecha: 2026-10-02 14:20 UTC
 - Configuración: en proceso | LLM=local-deterministic-v1 | embeddings=local-hashing-v1 | store=local
 - Casos: 35 — Aprobados: 35
 
