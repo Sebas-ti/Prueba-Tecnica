@@ -124,6 +124,9 @@ docs/             arquitectura, decisiones, seguridad, evaluación, AI-CDL, guio
 .github/workflows CI: lint, pruebas, quality gate de evaluación, validación Bicep, despliegue
 ```
 
+Recorrido función por función del código, con línea exacta por afirmación y
+verificación en vivo: [docs/recorrido-del-codigo.md](docs/recorrido-del-codigo.md).
+
 ## Pruebas y evaluación
 
 ```bash
