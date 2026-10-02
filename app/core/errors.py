@@ -47,6 +47,25 @@ class UpstreamError(AppError):
     code = "upstream_error"
 
 
+class ContentFilteredError(AppError):
+    """Azure OpenAI rechazó la petición por su filtro de contenido (incluye jailbreak).
+
+    Es la segunda capa de defensa (la heurística propia es la primera). El agente la
+    captura y la traduce a un resultado normal con status=blocked; no debería llegar
+    sin capturar hasta la respuesta HTTP, pero se deja un status_code de respaldo.
+    """
+
+    status_code = 502
+    code = "content_filtered"
+
+
+class UpstreamRateLimitError(AppError):
+    """Azure OpenAI está limitando la tasa de peticiones (cuota de TPM/RPM)."""
+
+    status_code = 503
+    code = "upstream_rate_limited"
+
+
 class RateLimitError(AppError):
     status_code = 429
     code = "rate_limited"
@@ -61,7 +80,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def _app_error(_: Request, exc: AppError) -> JSONResponse:
         level = log.error if exc.status_code >= 500 else log.warning
         level("app_error", extra={"code": exc.code, "status": exc.status_code, "detail": exc.message})
-        return JSONResponse(status_code=exc.status_code, content=_body(exc.code, exc.message, exc.details))
+        headers = None
+        retry_after = exc.details.get("retry_after")
+        if retry_after is not None:
+            headers = {"Retry-After": str(retry_after)}
+        return JSONResponse(status_code=exc.status_code, content=_body(exc.code, exc.message, exc.details), headers=headers)
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:

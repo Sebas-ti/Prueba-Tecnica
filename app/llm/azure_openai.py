@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from app.config import Settings
-from app.core.errors import UpstreamError
+from app.core.errors import ContentFilteredError, UpstreamError, UpstreamRateLimitError
 from app.core.logging import get_logger
 from app.llm.base import LLMResponse, ToolCall
 
@@ -58,9 +58,19 @@ class AzureOpenAILLM:
         try:
             resp = self.client.chat.completions.create(**kwargs)
         except Exception as exc:
-            # El filtro de contenido de Azure devuelve 400 con code=content_filter
             code = getattr(exc, "code", None) or type(exc).__name__
+            status = getattr(exc, "status_code", None)
             log.error("llm_call_failed", extra={"error": str(code)})
+            if code == "content_filter":
+                # Segunda capa de defensa: el filtro de contenido de Azure (incluye
+                # jailbreak) rechazó la petición con 400. No es una falla del sistema.
+                raise ContentFilteredError("Azure OpenAI bloqueó la petición por su filtro de contenido",
+                                           details={"code": str(code)}) from exc
+            if status == 429 or code == "rate_limit_exceeded":
+                response = getattr(exc, "response", None)
+                retry_after = response.headers.get("retry-after") if response is not None else None
+                raise UpstreamRateLimitError("Azure OpenAI está limitando la tasa de peticiones (cuota de TPM/RPM)",
+                                             details={"code": str(code), "retry_after": retry_after or 60}) from exc
             raise UpstreamError("Fallo invocando Azure OpenAI", details={"code": str(code)}) from exc
         choice = resp.choices[0]
         calls = [

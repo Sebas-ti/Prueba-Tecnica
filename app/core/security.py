@@ -73,8 +73,11 @@ def assess_injection(text: str) -> InjectionAssessment:
 def neutralize_context(text: str) -> tuple[str, bool]:
     """Neutraliza instrucciones embebidas en documentos (inyección indirecta).
 
-    Devuelve el texto con las líneas sospechosas reemplazadas y un flag que
-    indica si hubo cambios (se registra para auditoría).
+    Devuelve el texto con las oraciones sospechosas eliminadas (en silencio, sin
+    dejar ningún marcador en el texto que recibe el modelo: un LLM real puede
+    repetirle ese marcador al usuario, lo cual filtra un detalle de implementación
+    interno) y un flag para auditoría — el flag, no el texto, es lo que se registra
+    y cuenta en `flagged_chunks`.
     """
     flagged = False
     out_lines = []
@@ -86,8 +89,9 @@ def neutralize_context(text: str) -> tuple[str, bool]:
         # Se remueve solo la oración sospechosa, conservando el resto de la línea.
         sentences = re.split(r"(?<=[.!?])\s+", line)
         kept = [s for s in sentences if assess_injection(s).score < 0.6]
-        removed = "[contenido removido: posible instrucción embebida]"
-        out_lines.append(" ".join(kept + [removed]) if kept else removed)
+        if kept:
+            out_lines.append(" ".join(kept))
+        # Si la línea entera era maliciosa, se omite sin dejar rastro en el texto.
     return "\n".join(out_lines), flagged
 
 

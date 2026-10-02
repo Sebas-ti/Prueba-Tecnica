@@ -8,7 +8,9 @@ param userPrincipalId string = ''
 // gpt-4o-mini está en estado Deprecated: las suscripciones nuevas ya no pueden desplegarlo.
 param chatModel string = 'gpt-5-mini'
 param chatModelVersion string = '2025-08-07'
-param chatCapacity int = 30
+// 30K TPM daba ~3-5 preguntas/min y producía 502 reales bajo carga moderada
+// (ver docs/evidencias/azure/operacion.md); la cuota de la suscripción permite mucho más.
+param chatCapacity int = 150
 param embeddingModel string = 'text-embedding-3-small'
 param embeddingModelVersion string = '1'
 param embeddingCapacity int = 30

@@ -133,6 +133,11 @@ class LocalLLM:
                 continue
             formatter = getattr(self, f"_fmt_{name}", None)
             parts.append(formatter(question, data) if formatter else json.dumps(data, ensure_ascii=False))
+        if results and all("error" in data for _, data in results):
+            # Ninguna herramienta aportó datos reales (p. ej. "no existe la
+            # solicitud"): es una abstención, no una respuesta con datos. El
+            # prefijo estándar es lo que el agente usa para clasificar status=no_info.
+            return NO_INFO_ANSWER + "\n\n" + "\n\n".join(parts)
         return "\n\n".join(p for p in parts if p)
 
     def _fmt_buscar_documentacion(self, question: str, data: dict) -> str:

@@ -88,9 +88,37 @@ Resultado de una corrida completa (34 casos, juez LLM) contra el despliegue ya c
 
 **El costo es real, no gratuito**: la latencia p95 casi se duplicó (13,1 s → 30,5 s). Subir `reasoning_effort` no es una mejora sin contrapartida — es una decisión de producto: para GESOL, donde la alternativa es que un analista busque manualmente ~25 minutos, 30 segundos de latencia p95 sigue siendo una mejora aplastante; para un caso de uso con requisitos de latencia más estrictos, la decisión podría ser distinta.
 
-**Nota operativa encontrada al re-evaluar**: el script `pre_video_check.py` del revisor ejecuta su prueba de rate-limit (satura la API a propósito) *antes* de lanzar la evaluación completa en el mismo proceso; como `eval/run_eval.py` no maneja códigos distintos de 200 en su runner contra API, la evaluación aborta en el primer `429` heredado y el script reporta en silencio el contenido de una corrida *anterior* como si fuera la actual. Se re-ejecutó la evaluación por separado (sin el bloqueo activo) para obtener el número real de arriba; no se modificó el script del revisor.
+**Nota operativa encontrada al re-evaluar**: el script `pre_video_check.py` del revisor ejecuta su prueba de rate-limit (satura la API a propósito) *antes* de lanzar la evaluación completa en el mismo proceso; como `eval/run_eval.py` no manejaba códigos distintos de 200 en su runner contra API, la evaluación abortaba en el primer `429` heredado y el script reportaba en silencio el contenido de una corrida *anterior* como si fuera la actual. Se re-ejecutó la evaluación por separado (sin el bloqueo activo) para obtener el número real de arriba; no se modificó el script del revisor.
 
-**Conclusión**: el 78,8 % contra Azure real es una medición honesta, no una regresión de calidad. De los 7 fallos, 3 son diferencias de formato/estado que el juez califica como sustancialmente correctas, 3 son fallos reales de invocación de herramienta concentrados en acciones de cálculo con `reasoning_effort=low`, y 1 (INJ-06) mantuvo la propiedad de seguridad relevante pese a usar otra herramienta.
+## 1quater. Segunda ronda de revisión: 5 hallazgos reales, corregidos y verificados
+
+Una segunda revisión externa, caso por caso, encontró 5 problemas reales que la corrida anterior no exponía:
+
+1. **Capacidad del deployment insuficiente para grabar en vivo**: con 30K TPM, una prueba de carga de 20 peticiones a 5 de concurrencia daba 7/20 en `502`. Se subió la capacidad a 150K TPM (cuota de la suscripción: 1000K, con amplio margen) vía `az rest` (el comando de CLI dedicado requiere una extensión en preview con un bug de prompt interactivo en Windows).
+2. **El filtro de contenido de Azure (segunda capa de defensa) se reportaba como `502` genérico**: se agregaron `ContentFilteredError` (→ `status=blocked`, HTTP 200, `security.injection_matches=["azure_content_filter"]`) y `UpstreamRateLimitError` (→ 503 con `Retry-After`) en `app/llm/azure_openai.py` y `app/agent/agent.py`, distinguiéndolos del `UpstreamError` genérico.
+3. **Clasificación de `status` frágil**: dependía de que la respuesta contuviera `NO_INFO_ANSWER[:60]` en cualquier parte del texto. Se corrigió a "empieza con la frase normalizada (sin tildes/mayúsculas) y ninguna herramienta de acción aportó datos reales" (`app/agent/agent.py`), y `sources` ahora se calcula para `answered` y `no_info` por igual (antes solo para `answered`, dejando citas `[n]` sin resolver).
+4. **El juez evaluaba con snippets de 300 caracteres**, marcando como no fundamentado el "122 h" de `calcular_esfuerzo` (que nunca estaba en un snippet de RAG) o un dato presente en el chunk completo pero fuera del recorte. Se guarda ahora en el historial el resultado completo de cada herramienta (4000 caracteres) y el texto íntegro de los chunks citados; el juez lee `/v1/history/{interaction_id}` para construir su contexto, y ya no se le pregunta sobre casos `blocked`.
+5. **Sobre-uso de herramientas y marcador de neutralización visible**: el prompt (`agent-v1.6`/`v1.7`) ahora exige usar solo las herramientas de solicitudes para preguntas sobre una solicitud concreta (no además `buscar_documentacion`), prohíbe citar fuentes irrelevantes, aclara que `resumen_ejecutivo` ya incluye prioridad y esfuerzo (no llamar esas herramientas aparte), exige `recomendar_servicios_cloud` para recomendaciones cloud, y prohíbe **cualquier** cierre con oferta de seguir ayudando (no solo las de capacidades inexistentes). La neutralización de inyección indirecta (`app/core/security.py`) ya no deja el marcador `"[contenido removido...]"` en el texto que recibe el modelo — el flag de auditoría vive solo en metadatos/logs.
+
+**Resultado final** (34 casos, juez LLM, con los 5 fixes + `reasoning_effort=medium` + capacidad 150K TPM):
+
+| Métrica | Antes de esta ronda | Después |
+| --- | --- | --- |
+| Exactitud global | 94,1 % (32/34) | **97,1 %** (33/34) |
+| Selección de herramientas | 88,9 % | **100 %** |
+| Abstención correcta | — | **100 %** |
+| Resistencia a injection | — | **100 %** |
+| Groundedness promedio | 0,848 | **0,956** |
+| LLM-juez: correctas / fundamentadas | — / 23,5 %* | **90,0 % / 93,3 %** |
+| Latencia p50 (eval) | 8,4 s | 8,4 s |
+| Prueba de carga 20×5 (502) | 7/20 | **0/20** |
+| Rate limit propio (429) | ✅ | ✅ |
+
+*El 23,5 % de "fundamentadas" de la corrida anterior era un artefacto de instrumentación del juez (snippets truncados), no una medición real del agente — por eso no se incluyó como número a mejorar, se corrigió la causa.
+
+**Único caso que sigue fallando**: `RAG-09` (formato "22:00" vs. literal "10:00 p. m.") — es el mismo artefacto de texto exacto ya documentado arriba, confirmado correcto por el juez. `TOOL-05` (`recomendar_servicios_cloud`), el fallo real que quedaba, **ya no falla** tras el ajuste de prompt del punto 5.
+
+**Conclusión**: la caída inicial a 78,8-79,4 % con `reasoning_effort=low` no era un techo del sistema — era una combinación de (a) variabilidad real del LLM con esfuerzo de razonamiento bajo, (b) tres bugs reales y acotados (clasificación de status, contexto del juez, sobre-uso de herramientas) y (c) un criterio de prueba demasiado literal en varios casos. Corregido lo real y medido con instrumentación correcta, el sistema sostiene 97,1 % con groundedness de 0,956 contra Azure real.
 
 ## 3. Casos representativos (pregunta, criterio, resultado y observación)
 

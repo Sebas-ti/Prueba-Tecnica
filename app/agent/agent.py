@@ -19,18 +19,29 @@ from datetime import UTC, datetime
 from app.agent.grounding import check_grounding
 from app.agent.tools import ToolContext, ToolExecution, execute_tool, tool_schemas
 from app.config import Settings
+from app.core.errors import ContentFilteredError
 from app.core.logging import get_logger, redact
 from app.core.security import assess_injection, output_leaks, sanitize_user_text
 from app.llm.base import LLMClient
 from app.llm.prompts import BLOCKED_ANSWER, LEAK_ANSWER, NO_INFO_ANSWER, PROMPT_VERSION, SYSTEM_PROMPT
 from app.rag.knowledge_base import KnowledgeBase
+from app.rag.text import strip_accents
 from app.storage.history import HistoryStore
 from app.storage.requests_repo import RequestRepository
 
 log = get_logger(__name__)
 
 MAX_TOOL_RESULT_CHARS = 12_000
+JUDGE_TOOL_RESULT_CHARS = 4_000
 HISTORY_TURNS = 3
+_NO_INFO_PREFIX = strip_accents("no tengo información suficiente").lower()
+
+
+def _looks_like_no_info(answer: str) -> bool:
+    """Solo clasifica como abstención si la respuesta EMPIEZA así (normalizado:
+    sin tildes, sin mayúsculas) — no si lo menciona en medio o al final tras
+    responder con datos reales."""
+    return strip_accents(answer).strip().lower().startswith(_NO_INFO_PREFIX)
 
 
 @dataclass
@@ -83,7 +94,19 @@ class Agent:
         schemas = tool_schemas()
 
         for _ in range(self.settings.agent_max_iterations):
-            resp = self.llm.chat(messages, schemas)
+            try:
+                resp = self.llm.chat(messages, schemas)
+            except ContentFilteredError:
+                # Segunda capa de defensa: el filtro de contenido de Azure detectó lo
+                # que la heurística propia no atrapó (p. ej. jailbreak parafraseado en
+                # otro idioma). Se trata igual que un bloqueo propio: HTTP 200, status
+                # blocked, sin exponer el error de Azure como una falla del sistema.
+                log.warning("azure_content_filter_blocked")
+                security["injection_score"] = max(security.get("injection_score", 0.0), 1.0)
+                security["injection_matches"] = [*security.get("injection_matches", []), "azure_content_filter"]
+                result = AgentResult(interaction_id=interaction_id, session_id=session_id, answer=BLOCKED_ANSWER,
+                                     status="blocked", security=security, model=self.llm.model_name)
+                return self._finish(result, question, user_id, t0)
             usage["prompt_tokens"] += resp.prompt_tokens
             usage["completion_tokens"] += resp.completion_tokens
             usage["llm_calls"] += 1
@@ -114,11 +137,20 @@ class Agent:
             security["output_flags"] = leaks
             answer, status = LEAK_ANSWER, "output_blocked"
 
-        if status == "answered" and NO_INFO_ANSWER[:60] in answer:
+        if status == "answered" and _looks_like_no_info(answer):
+            # Solo es no_info si la respuesta EMPIEZA declarando que no hay
+            # información (no si responde y luego aclara límites al final, como
+            # "...la política dice X [1]. No tengo información para ampliar más") y
+            # ninguna herramienta de acción (no de búsqueda) aportó datos reales.
+            # `e.ok` ya es False cuando la herramienta devolvió {"error": ...} (p. ej.
+            # "no existe la solicitud"), así que no cuenta como dato real.
             successful_actions = [e for e in executions if e.ok and e.name != "buscar_documentacion"]
             status = "answered" if successful_actions else "no_info"
 
-        sources = self._sources(answer, ctx) if status == "answered" else []
+        # Las citas [n] se resuelven para cualquier respuesta que sí llegó al usuario
+        # (answered/no_info/incomplete); solo blocked/output_blocked no tienen contexto
+        # de herramientas que citar. Evita citas [n] "colgadas" sin fuente asociada.
+        sources = self._sources(answer, ctx) if status not in {"blocked", "output_blocked"} else []
         grounding = None
         if status == "answered":
             contexts = [json.dumps(e.result, ensure_ascii=False) for e in executions]
@@ -133,7 +165,7 @@ class Agent:
             tool_calls=[{"name": e.name, "arguments": e.arguments, "ok": e.ok, "elapsed_ms": e.elapsed_ms} for e in executions],
             grounding=grounding, security=security, usage=usage, model=self.llm.model_name,
         )
-        return self._finish(result, question, user_id, t0)
+        return self._finish(result, question, user_id, t0, executions=executions, ctx=ctx)
 
     # ------------------------------------------------------------------
     def _session_messages(self, session_id: str) -> list[dict]:
@@ -150,16 +182,22 @@ class Agent:
         import re
 
         cited = {int(n) for n in re.findall(r"\[(\d+)\]", answer)}
+        if not cited:
+            # Sin marcadores [n] no hay nada que resolver; evita listar como
+            # "fuentes" fragmentos que la búsqueda recuperó pero el modelo no citó
+            # (p. ej. una abstención sin citas explícitas).
+            return []
         out = []
         for ref, r in enumerate(ctx.citations, start=1):
-            if cited and ref not in cited:
+            if ref not in cited:
                 continue
             snippet = r.text.split("\n", 1)[-1][:300]
             out.append({"ref": ref, "source": r.source, "section": r.section, "page": r.page,
-                        "score": r.score, "snippet": snippet, "cited": ref in cited})
+                        "score": r.score, "snippet": snippet, "cited": True})
         return out
 
-    def _finish(self, result: AgentResult, question: str, user_id: str, t0: float) -> AgentResult:
+    def _finish(self, result: AgentResult, question: str, user_id: str, t0: float,
+                executions: list[ToolExecution] | None = None, ctx: ToolContext | None = None) -> AgentResult:
         result.latency_ms = int((time.perf_counter() - t0) * 1000)
         record = {
             "id": result.interaction_id,
@@ -170,6 +208,18 @@ class Agent:
             **{k: v for k, v in asdict(result).items() if k not in {"interaction_id", "session_id"}},
         }
         record["answer"] = redact(record["answer"])
+        # Solo para auditoría / LLM-juez, no forma parte del contrato público de
+        # /v1/chat: el resultado completo de cada herramienta (truncado) y el texto
+        # íntegro de los fragmentos citados (no el snippet de 300 caracteres).
+        if executions:
+            record["tool_results"] = [
+                {"name": e.name, "ok": e.ok, "result": json.dumps(e.result, ensure_ascii=False)[:JUDGE_TOOL_RESULT_CHARS]}
+                for e in executions
+            ]
+        if ctx and ctx.citations:
+            record["cited_chunks"] = [
+                {"ref": i, "source": c.source, "text": c.text} for i, c in enumerate(ctx.citations, start=1)
+            ]
         try:
             self.history.save(record)
         except Exception:

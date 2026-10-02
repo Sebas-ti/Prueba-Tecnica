@@ -101,6 +101,43 @@ def test_direct_injection_never_reaches_the_llm(indexed_container, tmp_path):
     assert llm.calls == []
 
 
+# --------------------------------------------------- Clasificación de status
+def test_answer_with_closing_caveat_stays_answered_with_sources(indexed_container, tmp_path):
+    """Responder con datos reales y aclarar límites al final (no al principio) no
+    debe clasificarse como no_info, y las citas deben resolver a una fuente real."""
+    llm = ScriptedLLM([
+        LLMResponse(content=None, tool_calls=[_call("buscar_documentacion", query="RTO y RPO de GESOL")]),
+        LLMResponse(content="El RTO de GESOL es de 4 horas [1]. No tengo información suficiente para "
+                            "ampliar más detalles sobre el proceso de aprobación."),
+    ])
+    r = _agent(indexed_container, llm, tmp_path).run("¿Cuál es el RTO?")
+    assert r.status == "answered"
+    assert r.sources and r.sources[0]["source"] == "procedimiento_continuidad_respaldo.md"
+
+
+def test_abstention_detected_even_without_exact_canonical_wording(indexed_container, tmp_path):
+    """La detección de abstención debe tolerar variación de mayúsculas/tildes y no
+    depender de que el LLM repita el string exacto de NO_INFO_ANSWER."""
+    llm = ScriptedLLM([
+        LLMResponse(content=None, tool_calls=[_call("buscar_documentacion", query="presupuesto de marketing 2027")]),
+        LLMResponse(content="NO TENGO INFORMACIÓN SUFICIENTE en las fuentes disponibles para indicar "
+                            "el presupuesto de marketing 2027."),
+    ])
+    r = _agent(indexed_container, llm, tmp_path).run("¿Cuál es el presupuesto de marketing 2027?")
+    assert r.status == "no_info"
+
+
+def test_nonexistent_request_is_no_info_not_answered(indexed_container, tmp_path):
+    """Una herramienta que falla (devuelve {"error": ...}) no cuenta como dato real:
+    la abstención debe quedar como no_info, no answered."""
+    llm = ScriptedLLM([
+        LLMResponse(content=None, tool_calls=[_call("consultar_solicitud", request_id="SOL-9999")]),
+        LLMResponse(content="No tengo información suficiente en las fuentes disponibles sobre la solicitud SOL-9999."),
+    ])
+    r = _agent(indexed_container, llm, tmp_path).run("¿Cuál es el estado de la SOL-9999?")
+    assert r.status == "no_info"
+
+
 def test_local_agent_abstains_without_information(indexed_container):
     r = indexed_container.agent.run("¿Cuál es la capital de Francia?")
     assert r.status == "no_info"
@@ -118,3 +155,18 @@ def test_interactions_are_persisted_with_trace(indexed_container):
     rec = indexed_container.history.get(r.interaction_id)
     assert rec["tool_calls"][0]["name"] == "calcular_esfuerzo"
     assert rec["prompt_version"] and rec["model"] and rec["latency_ms"] >= 0
+    # Contexto completo para auditoría / LLM-juez: resultado íntegro de la
+    # herramienta (no solo name/ok/elapsed_ms, que sí va en la respuesta pública).
+    assert rec["tool_results"][0]["name"] == "calcular_esfuerzo"
+    assert "horas_estimadas" in rec["tool_results"][0]["result"]
+
+
+def test_cited_chunks_are_persisted_with_full_text(indexed_container):
+    r = indexed_container.agent.run("¿Cuál es el RTO y el RPO de GESOL?")
+    rec = indexed_container.history.get(r.interaction_id)
+    assert rec["cited_chunks"], "debe registrar los chunks citados para el juez"
+    cited_ref = r.sources[0]["ref"]
+    full_text = next(c["text"] for c in rec["cited_chunks"] if c["ref"] == cited_ref)
+    # El snippet público (sources) está recortado a 300 caracteres; el registrado
+    # para el juez debe ser el texto íntegro del chunk, no ese mismo recorte.
+    assert r.sources[0]["snippet"] in full_text

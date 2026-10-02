@@ -66,6 +66,9 @@ class InProcessRunner:
     def ask(self, question: str, session_id: str | None) -> dict:
         return asdict(self.container.agent.run(question, session_id=session_id, user_id="eval"))
 
+    def history(self, interaction_id: str) -> dict | None:
+        return self.container.history.get(interaction_id)
+
 
 class ApiRunner:
     def __init__(self, url: str, api_key: str | None) -> None:
@@ -83,6 +86,10 @@ class ApiRunner:
         r = self.client.post("/v1/chat", json=body)
         r.raise_for_status()
         return r.json()
+
+    def history(self, interaction_id: str) -> dict | None:
+        r = self.client.get(f"/v1/history/{interaction_id}")
+        return r.json() if r.status_code == 200 else None
 
 
 # ---------------------------------------------------------------------------
@@ -125,11 +132,27 @@ def evaluate_case(case: dict, resp: dict) -> dict:
     }
 
 
-def judge(settings, row: dict, resp: dict) -> dict:
+def _judge_context(resp: dict, record: dict | None) -> str:
+    """Prefiere el contexto completo (resultados de herramientas + texto íntegro de
+    los chunks citados, leídos del historial) sobre los snippets de 300 caracteres
+    ya recortados en `sources`: el juez evaluaba mal respuestas correctas (p. ej.
+    "122 h" de calcular_esfuerzo, o un dato presente en el chunk pero fuera del
+    recorte) por no ver más que el fragmento truncado."""
+    if not record:
+        return "\n".join(f"[{s['ref']}] {s['snippet']}" for s in resp.get("sources", [])) or "(sin fragmentos)"
+    parts = []
+    for t in record.get("tool_results", []):
+        parts.append(f"Herramienta {t['name']} (ok={t['ok']}): {t['result']}")
+    for c in record.get("cited_chunks", []):
+        parts.append(f"[{c['ref']}] {c['source']}: {c['text']}")
+    return "\n".join(parts) or "(sin contexto registrado)"
+
+
+def judge(settings, row: dict, resp: dict, record: dict | None = None) -> dict:
     from app.llm.azure_openai import AzureOpenAILLM
 
     llm = AzureOpenAILLM(settings)
-    ctx = "\n".join(f"[{s['ref']}] {s['snippet']}" for s in resp.get("sources", [])) or "(sin fragmentos)"
+    ctx = _judge_context(resp, record)
     try:
         out = llm.chat([{"role": "user", "content": JUDGE_PROMPT.format(
             pregunta=row["pregunta"], criterio=row["criterio"], respuesta=row["respuesta"], contexto=ctx)}])
@@ -239,10 +262,11 @@ def main() -> int:
         resp.setdefault("latency_ms", int((time.perf_counter() - t0) * 1000))
         row = evaluate_case(case, resp)
         row["_exp_tools"] = bool(case.get("herramientas_esperadas"))
-        if args.judge:
+        if args.judge and resp.get("status") != "blocked":
             from app.config import get_settings
 
-            row["juez"] = judge(get_settings(), row, resp)
+            record = runner.history(resp["interaction_id"]) if resp.get("interaction_id") else None
+            row["juez"] = judge(get_settings(), row, resp, record)
         rows.append(row)
         print(f"{'PASS' if row['aprobado'] else 'FAIL'}  {row['id']:<10} {row['estado']:<10} {'; '.join(row['motivos'])}")
 
