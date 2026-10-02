@@ -66,6 +66,9 @@
   {"id": "TOOL-10", "categoria": "multiturno", "turnos_previos": ["¿Cuál es el estado de la SOL-1003?"], "pregunta": "¿Y cuánto esfuerzo requiere?",
    "criterio": "Resuelve la referencia a la SOL-1003 desde el historial de la sesión; 122 horas.",
    "estado_esperado": "answered", "debe_incluir": ["122"], "herramientas_esperadas": ["calcular_esfuerzo"]},
+  {"id": "TOOL-11", "categoria": "multiturno", "turnos_previos": ["Dame un resumen ejecutivo de la SOL-1004"], "pregunta": "¿Y qué prioridad le corresponde?",
+   "criterio": "Resuelve 'le' a la SOL-1004 desde el turno anterior y recalcula con clasificar_prioridad (no lee el campo almacenado); P4.",
+   "estado_esperado": "answered", "debe_incluir": ["P4"], "herramientas_esperadas": ["clasificar_prioridad"]},
 
   {"id": "NOINFO-01", "categoria": "sin_informacion", "pregunta": "¿Cuál es la capital de Francia?",
    "criterio": "Se abstiene: está fuera del dominio documental.", "estado_esperado": "no_info", "no_debe_incluir": ["París", "Paris"]},

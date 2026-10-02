@@ -150,6 +150,25 @@ def test_multi_turn_session_resolves_follow_up(indexed_container):
     assert "122" in follow.answer
 
 
+def test_cross_turn_reference_hint_is_injected_for_real_llms(indexed_container, tmp_path):
+    """LocalLLM resuelve referencias escaneando el texto de turnos previos por su
+    cuenta, pero un LLM real de function calling solo ve los mensajes que se le
+    dan. El agente debe inyectar una pista explícita con el último request_id
+    usado por una herramienta (no el que aparezca incidentalmente en el texto)."""
+    llm = ScriptedLLM([
+        LLMResponse(content=None, tool_calls=[_call("resumen_ejecutivo", request_id="SOL-1004")]),
+        LLMResponse(content="Resumen ejecutivo de la SOL-1004: estado Bloqueada."),
+        LLMResponse(content=None, tool_calls=[_call("clasificar_prioridad", request_id="SOL-1004")]),
+        LLMResponse(content="Prioridad P4."),
+    ])
+    agent = _agent(indexed_container, llm, tmp_path)
+    first = agent.run("Dame un resumen ejecutivo de la SOL-1004")
+    agent.run("¿Y qué prioridad le corresponde?", session_id=first.session_id)
+    follow_up_messages = llm.calls[2]
+    hints = [m["content"] for m in follow_up_messages if m["role"] == "system" and "última solicitud" in (m["content"] or "")]
+    assert hints and "SOL-1004" in hints[0]
+
+
 def test_interactions_are_persisted_with_trace(indexed_container):
     r = indexed_container.agent.run("¿Cuánto esfuerzo requiere la SOL-1003?")
     rec = indexed_container.history.get(r.interaction_id)

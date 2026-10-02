@@ -11,6 +11,7 @@ Flujo por pregunta:
 from __future__ import annotations
 
 import json
+import re
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -35,6 +36,7 @@ MAX_TOOL_RESULT_CHARS = 12_000
 JUDGE_TOOL_RESULT_CHARS = 4_000
 HISTORY_TURNS = 3
 _NO_INFO_PREFIX = strip_accents("no tengo información suficiente").lower()
+_SOL_ID_RE = re.compile(r"\bSOL-\d{4}\b", re.I)
 
 
 def _looks_like_no_info(answer: str) -> bool:
@@ -86,8 +88,19 @@ class Agent:
             return self._finish(result, question, user_id, t0)
 
         ctx = ToolContext(kb=self.kb, requests=self.requests, cloud_catalog=self.cloud_catalog)
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}, *self._session_messages(session_id),
-                    {"role": "user", "content": question}]
+        turns = self.history.session_turns(session_id, HISTORY_TURNS)
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}, *self._session_messages(turns)]
+        last_request_id = self._last_request_id(turns)
+        if last_request_id and not _SOL_ID_RE.search(question):
+            # Pista explícita para un LLM real: a diferencia de LocalLLM._plan(), que
+            # ya escanea el texto de turnos previos por su cuenta, un LLM de function
+            # calling solo ve los mensajes que se le dan — sin esto, "le"/"su"/"esa"
+            # puede quedar sin resolver o resolverse a la solicitud equivocada.
+            messages.append({"role": "system", "content": (
+                f"La última solicitud tratada en esta sesión es {last_request_id}; si la "
+                "pregunta usa 'le', 'su', 'esa' o no nombra una solicitud, se refiere a ella."
+            )})
+        messages.append({"role": "user", "content": question})
         executions: list[ToolExecution] = []
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "llm_calls": 0}
         answer: str | None = None
@@ -168,14 +181,26 @@ class Agent:
         return self._finish(result, question, user_id, t0, executions=executions, ctx=ctx)
 
     # ------------------------------------------------------------------
-    def _session_messages(self, session_id: str) -> list[dict]:
+    @staticmethod
+    def _session_messages(turns: list[dict]) -> list[dict]:
         msgs: list[dict] = []
-        for turn in self.history.session_turns(session_id, HISTORY_TURNS):
+        for turn in turns:
             if turn.get("status") in {"blocked", "output_blocked"}:
                 continue  # no se reinyectan turnos maliciosos al contexto
             msgs.append({"role": "user", "content": turn["question"]})
             msgs.append({"role": "assistant", "content": turn["answer"]})
         return msgs
+
+    @staticmethod
+    def _last_request_id(turns: list[dict]) -> str | None:
+        """Último request_id realmente usado por una herramienta en la sesión,
+        no el que aparezca incidentalmente en el texto de una respuesta."""
+        for turn in reversed(turns):
+            for call in reversed(turn.get("tool_calls", [])):
+                rid = (call.get("arguments") or {}).get("request_id")
+                if rid:
+                    return rid
+        return None
 
     @staticmethod
     def _sources(answer: str, ctx: ToolContext) -> list[dict]:

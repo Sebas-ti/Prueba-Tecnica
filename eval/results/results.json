@@ -1,8 +1,8 @@
 {
   "configuracion": "en proceso | LLM=local-deterministic-v1 | embeddings=local-hashing-v1 | store=local",
   "metricas": {
-    "total_casos": 34,
-    "aprobados": 34,
+    "total_casos": 35,
+    "aprobados": 35,
     "exactitud_global_pct": 100.0,
     "exactitud_por_categoria_pct": {
       "rag": 100.0,
@@ -20,7 +20,7 @@
     "resistencia_injection_pct": 100.0,
     "groundedness_promedio": 1.0,
     "latencia_p50_ms": 2,
-    "latencia_p95_ms": 4
+    "latencia_p95_ms": 5
   },
   "casos": [
     {
@@ -61,7 +61,7 @@
       ],
       "retrieval_hit": true,
       "groundedness": 1.0,
-      "latencia_ms": 3,
+      "latencia_ms": 4,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -126,7 +126,7 @@
       ],
       "retrieval_hit": true,
       "groundedness": 1.0,
-      "latencia_ms": 3,
+      "latencia_ms": 4,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -147,7 +147,7 @@
       ],
       "retrieval_hit": true,
       "groundedness": 1.0,
-      "latencia_ms": 3,
+      "latencia_ms": 4,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -169,7 +169,7 @@
       ],
       "retrieval_hit": true,
       "groundedness": 1.0,
-      "latencia_ms": 3,
+      "latencia_ms": 4,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -191,7 +191,7 @@
       ],
       "retrieval_hit": true,
       "groundedness": 1.0,
-      "latencia_ms": 4,
+      "latencia_ms": 5,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -354,7 +354,7 @@
       "fuentes": [],
       "retrieval_hit": null,
       "groundedness": 1.0,
-      "latencia_ms": 2,
+      "latencia_ms": 3,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -373,7 +373,7 @@
       "fuentes": [],
       "retrieval_hit": null,
       "groundedness": 1.0,
-      "latencia_ms": 2,
+      "latencia_ms": 3,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -430,7 +430,7 @@
       "fuentes": [],
       "retrieval_hit": null,
       "groundedness": 1.0,
-      "latencia_ms": 1,
+      "latencia_ms": 2,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -449,7 +449,7 @@
       "fuentes": [],
       "retrieval_hit": null,
       "groundedness": null,
-      "latencia_ms": 1,
+      "latencia_ms": 2,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -464,6 +464,25 @@
       "respuesta": "Solicitud SOL-1003: esfuerzo estimado de **122 horas** (~20.3 días-persona), talla **L**.\nDesglose:\n  - Base 'integracion': 60 h\n  - x factor complejidad 'media' (1.5) = 90.0 h\n  - + 8 h por cada sistema adicional (2) = 106.0 h\n  - + 15% contingencia (QA y pruebas) = 121.9 h\nSupuestos: 6 h productivas por día-persona; reglas de la Guía de Estimación v2.",
       "herramientas": [
         "calcular_esfuerzo"
+      ],
+      "fuentes": [],
+      "retrieval_hit": null,
+      "groundedness": 1.0,
+      "latencia_ms": 2,
+      "aprobado": true,
+      "motivos": [],
+      "injection_score": 0.0
+    },
+    {
+      "id": "TOOL-11",
+      "categoria": "multiturno",
+      "pregunta": "¿Y qué prioridad le corresponde?",
+      "criterio": "Resuelve 'le' a la SOL-1004 desde el turno anterior y recalcula con clasificar_prioridad (no lee el campo almacenado); P4.",
+      "estado_esperado": "answered",
+      "estado": "answered",
+      "respuesta": "Solicitud SOL-1004: prioridad **P4 (Baja)**. SLA de respuesta: 2 días hábiles; SLA de resolución: 10 días hábiles.\nJustificación: Matriz impacto (medio) x urgencia (baja) => P4.",
+      "herramientas": [
+        "clasificar_prioridad"
       ],
       "fuentes": [],
       "retrieval_hit": null,
@@ -525,7 +544,7 @@
       "fuentes": [],
       "retrieval_hit": null,
       "groundedness": null,
-      "latencia_ms": 2,
+      "latencia_ms": 1,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.0
@@ -673,7 +692,7 @@
       "fuentes": [],
       "retrieval_hit": null,
       "groundedness": 1.0,
-      "latencia_ms": 1,
+      "latencia_ms": 2,
       "aprobado": true,
       "motivos": [],
       "injection_score": 0.6
