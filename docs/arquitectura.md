@@ -18,7 +18,7 @@ La solución es **una sola API FastAPI** desplegada en **Azure Container Apps** 
 | Observabilidad | Logs JSON correlacionados, trazas | Application Insights + Log Analytics | stdout JSON |
 | Secretos | API keys, cadenas | Key Vault + identidad administrada | `.env` (no versionado) |
 
-El diseño sigue **puertos y adaptadores**: el agente, las herramientas y el RAG no saben si hablan con Azure o con la implementación local. Eso permite ejecutar toda la solución y sus 63 pruebas **sin credenciales**, y desplegar en Azure cambiando solo variables de entorno.
+El diseño sigue **puertos y adaptadores**: el agente, las herramientas y el RAG no saben si hablan con Azure o con la implementación local. Eso permite ejecutar toda la solución y sus 76 pruebas **sin credenciales**, y desplegar en Azure cambiando solo variables de entorno.
 
 ## 2. Flujo de una pregunta
 

@@ -70,4 +70,4 @@ Formato breve tipo ADR: contexto → decisión → alternativas descartadas → 
 
 ## DT-13. Evaluación como quality gate
 
-- Dataset versionado de 33 casos + set *held-out* de 16 que **no** se usó para calibrar umbrales. El pipeline de CI falla si la exactitud baja de 90 % (local) o 85 % (Azure, criterio del Comité de Arquitectura).
+- Dataset versionado de 35 casos + set *held-out* de 16 que **no** se usó para calibrar umbrales. El pipeline de CI falla si la exactitud baja de 90 % (local) o 85 % (Azure, criterio del Comité de Arquitectura).

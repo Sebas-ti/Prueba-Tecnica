@@ -117,7 +117,7 @@ data/
   docs/           corpus: manual técnico, procedimientos, política de seguridad, histórico, actas (MD, DOCX, PDF)
   solicitudes.json, cloud_services.json   mocks del sistema legado y del catálogo cloud
 eval/             datasets (principal y held-out), runner de evaluación y reportes generados
-tests/            63 pruebas (unitarias, agente con LLM simulado, API, adaptadores Azure)
+tests/            76 pruebas (unitarias, agente con LLM simulado, API, adaptadores Azure)
 infra/            Bicep: main + módulos (OpenAI, AI Search, Cosmos, Key Vault, ACR, Container Apps, monitoreo)
 scripts/          ingesta por lotes, generación de documentos de ejemplo, despliegue en Azure
 docs/             arquitectura, decisiones, seguridad, evaluación, AI-CDL, evidencias
@@ -130,9 +130,9 @@ verificación en vivo: [docs/recorrido-del-codigo.md](docs/recorrido-del-codigo.
 ## Pruebas y evaluación
 
 ```bash
-make test           # 63 pruebas
+make test           # 76 pruebas
 make lint           # ruff (incluye reglas de seguridad)
-make eval           # dataset principal (34 casos) → eval/results/report.md
+make eval           # dataset principal (35 casos) → eval/results/report.md
 make eval-holdout   # set held-out (16 casos)        → eval/results/holdout/report.md
 ```
 

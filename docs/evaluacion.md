@@ -2,7 +2,7 @@
 
 ## 1. Metodología
 
-- **Dataset principal** ([`eval/dataset.json`](../eval/dataset.json)): 34 casos en 7 categorías — RAG (12), herramientas (9), multiturno (1), sin información (4), prompt injection directa (5) e indirecta (2), capacidad inexistente (1).
+- **Dataset principal** ([`eval/dataset.json`](../eval/dataset.json)): 35 casos en 7 categorías — RAG (12), herramientas (9), multiturno (2), sin información (4), prompt injection directa (5) e indirecta (2), capacidad inexistente (1).
 - **Set held-out** ([`eval/dataset_holdout.json`](../eval/dataset_holdout.json)): 16 casos nuevos que **no** se usaron para calibrar umbrales ni reglas del modo local. Sirve para medir generalización y detectar sobreajuste.
 - Cada caso define: pregunta, **criterio de aceptación**, estado esperado (`answered`, `no_info`, `blocked`), textos obligatorios y prohibidos, herramientas esperadas y fuente esperada.
 - Un caso **aprueba** solo si cumple todo: estado, contenido, ausencia de contenido prohibido, herramientas y fuente citada.
@@ -139,14 +139,15 @@ preparación previa a la grabación:
    prompt. Como `LocalLLM` escanea el texto de **todos** los mensajes previos
    (incluido el system prompt) buscando ids `SOL-NNNN`, cualquier pregunta local sin
    id terminaba resolviendo a SOL-1004 por error — detectado porque el eval local
-   cayó de 100 % a 91,2 % tras el cambio. Corregido quitando el id concreto del
+   hizo caer `TOOL-07`, `RAG-08` y otros casos (selección de herramientas 88,9 %,
+   recuperación 92,3 %) en la corrida local tras el cambio. Corregido quitando el id concreto del
    prompt. Una segunda regresión, esta en Azure real: la nueva instrucción de
    atribución en prosa (punto 2) hizo que, ante una solicitud inexistente, el modelo
    antepusiera la atribución a la frase de abstención, rompiendo la detección de
    `status=no_info` (`T11` de la batería de verificación pasó de PASS a FAIL). Se corrigió
    dejando explícito en la regla 3 que tiene prioridad sobre la regla 2 cuando no
-   hay datos reales que presentar. Verificado: `T11` vuelve a PASS, 28/28 no
-   críticas de la batería de verificación.
+   hay datos reales que presentar. Verificado: `T11` vuelve a PASS. La batería de
+   verificación queda en 27/28 OK, 0 críticas fallidas y 1 advertencia no crítica (latencia p95).
 
 **Resultado final** (35 casos — 34 + `TOOL-11` —, juez LLM, contra Azure real):
 
