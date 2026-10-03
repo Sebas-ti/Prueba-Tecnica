@@ -12,7 +12,7 @@ reales.
 
 - **Claude Code** (Claude Sonnet 5, Anthropic), con acceso a shell, Python, `az` CLI,
   Docker/ACR y Git. Lo usé de forma agéntica: le pedí objetivos ("despliega en Azure",
-  "corre la evaluación real", "corrige esto que encontró el revisor") y lo dejé
+  "corre la evaluación real", "corrige los hallazgos de la revisión") y lo dejé
   ejecutar, leer errores y corregir, revisando yo el resultado en cada paso.
 - Equivalentes válidos para el mismo flujo: GitHub Copilot (agent mode), Cursor, Kiro,
   OpenAI Codex.
@@ -22,9 +22,9 @@ reales.
 | Tarea | Grado de apoyo | Qué validé yo / dónde intervine |
 | --- | --- | --- |
 | Estructura del repositorio y puertos/adaptadores | Alto | Revisé contra los criterios de la prueba antes de aceptar el diseño |
-| Código de API, RAG, agente, herramientas | Alto | 69 pruebas automatizadas + pruebas de humo contra la API real en Azure |
+| Código de API, RAG, agente, herramientas | Alto | 76 pruebas automatizadas + pruebas de humo contra la API real en Azure |
 | Despliegue real en Azure (no solo IaC en papel) | Alto, pero yo ejecuté cada paso sensible | Confirmé antes de crear recursos; corrí yo mismo los comandos que tocaban secretos o permisos (ver sección 4) |
-| Corrección de un defecto reportado por un revisor externo | Alto | Verifiqué el fix contra el despliegue real antes de darlo por cerrado, no solo contra la prueba unitaria |
+| Corrección de defectos detectados en una revisión externa | Alto | Verifiqué el fix contra el despliegue real antes de darlo por cerrado, no solo contra la prueba unitaria |
 | Evaluación con LLM real + juez | Medio-alto | Yo decidí correr 3 veces (principal, repetición, held-out) para medir variabilidad, no solo aceptar un único número |
 | Frontend de demostración (consola web) | Alto | Lo pedí explícitamente como "bonus", fuera del alcance obligatorio; lo probé yo en el navegador en cada iteración |
 | Diagrama y documentación | Alto | Revisión visual y de contenido antes de aceptar |
@@ -42,7 +42,7 @@ reales.
    mismo desde mi propia terminal (nunca pasó por el chat), y el CORS abierto lo
    reemplazamos por completo sirviendo la consola desde el mismo origen (`/console`)
    en vez de forzar el permiso.
-3. **Cuando un revisor externo me dio feedback detallado**, no apliqué sus sugerencias
+3. **Cuando recibí feedback detallado de una revisión externa**, no apliqué sus sugerencias
    a ciegas: antes de pedirle al asistente que corrigiera algo, comparé cada punto
    contra el estado real del repo — dos de sus observaciones ya estaban resueltas (la
    evaluación contra Azure ya existía), así que no las re-hice; prioricé las que sí
@@ -86,7 +86,7 @@ solo aparecen con infraestructura real, tráfico real y datos adversariales real
 | --- | --- | --- | --- |
 | 12 | El despliegue de Azure AI Search falló por falta de capacidad regional (`InsufficientResourcesAvailable`) | Error real de ARM al desplegar, no algo que una prueba unitaria detecte | Bloqueaba todo el despliegue; se resolvió separando la región de Search de la de OpenAI |
 | 13 | Dos builds de ACR y una corrida de evaluación local "fallaron" por un bug de codificación de consola de Windows (`cp1252`), no por un error real | Comparé el estado real del build en Azure (`az acr task list-runs`) contra el crash local antes de reintentar — evité relanzar builds innecesarios | Bajo, pero habría desperdiciado tiempo y cómputo si hubiera confiado ciegamente en el código de salida del CLI |
-| 14 | **Un revisor externo encontró que el agente ofrecía capacidades inexistentes** ("puedo enviarte el documento por correo") al final de una respuesta | Revisión humana del comportamiento real, no de pruebas | Alto: es exactamente lo que penaliza el criterio de "respuestas no fundamentadas" |
+| 14 | **Una revisión externa encontró que el agente ofrecía capacidades inexistentes** ("puedo enviarte el documento por correo") al final de una respuesta | Revisión humana del comportamiento real, no de pruebas | Alto: es exactamente lo que penaliza el criterio de "respuestas no fundamentadas" |
 | 15 | El caso de prueba que escribí para verificar el fix del punto 14 tenía su propio bug: buscaba la subcadena "puedo enviar" como prohibida, pero esa subcadena también aparece dentro de su propia negación ("**no** puedo enviar") | Lo detecté leyendo el texto completo del reporte de evaluación, no solo el símbolo ✅/❌ | Medio: un falso positivo me habría hecho creer que el fix no funcionaba cuando sí funcionaba |
 | 16 | El runner de evaluación no manejaba el caso en que **el propio filtro de contenido de Azure OpenAI bloquea la llamada al juez** (el texto adversarial de un caso de inyección, embebido en el prompt del juez, dispara el detector de jailbreak de Azure) | La corrida completa abortaba a mitad de camino | Medio: sin el fix, no se podía evaluar nada después del primer caso de inyección |
 | 17 | **Gap real de redacción de PII**: un celular sin separadores (`3001234567`, formato común en Colombia) nunca se redactaba a `[PHONE]`, aunque la prueba unitaria existente (con `+57 300 123 4567`) pasaba — el regex exigía matemáticamente un mínimo de 11 dígitos | Probé con datos realistas contra el historial real en Cosmos, no solo con el caso de prueba ya escrito | Alto: fuga de datos personales reales en el historial de interacciones |

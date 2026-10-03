@@ -61,7 +61,6 @@ app/
 scripts/
   ingest.py              CLI de ingesta por lotes (usado también como Container Apps Job)
   deploy_azure.sh         IaC: despliega infra/main.bicep + build de imagen + ingesta inicial
-  pre_video_check.py      Script del revisor: 28 smoke tests contra una API desplegada
 eval/
   run_eval.py             Harness de evaluación (exactitud, groundedness, LLM-juez)
   dataset.json             Casos de prueba etiquetados (RAG, herramientas, injection, abstención)

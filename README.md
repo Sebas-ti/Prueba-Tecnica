@@ -120,7 +120,7 @@ eval/             datasets (principal y held-out), runner de evaluación y repor
 tests/            63 pruebas (unitarias, agente con LLM simulado, API, adaptadores Azure)
 infra/            Bicep: main + módulos (OpenAI, AI Search, Cosmos, Key Vault, ACR, Container Apps, monitoreo)
 scripts/          ingesta por lotes, generación de documentos de ejemplo, despliegue en Azure
-docs/             arquitectura, decisiones, seguridad, evaluación, AI-CDL, guion del video, evidencias
+docs/             arquitectura, decisiones, seguridad, evaluación, AI-CDL, evidencias
 .github/workflows CI: lint, pruebas, quality gate de evaluación, validación Bicep, despliegue
 ```
 
@@ -159,7 +159,7 @@ Estos números son una **línea base del modo determinista** y el dataset princi
 | Diagrama de arquitectura | [docs/arquitectura.png](docs/arquitectura.png) · [docs/arquitectura.md](docs/arquitectura.md) |
 | Documento de decisiones técnicas | [docs/decisiones-tecnicas.md](docs/decisiones-tecnicas.md) |
 | Evidencia de pruebas | [docs/evidencias/](docs/evidencias/), `eval/results/` |
-| Video (≤ 7 min) | Guion: [docs/guion-video.md](docs/guion-video.md) |
+| Video (≤ 7 min) | Enlace pendiente de publicación |
 | Mejoras futuras / riesgos para producción | Secciones siguientes |
 
 ## Riesgos y consideraciones para producción
