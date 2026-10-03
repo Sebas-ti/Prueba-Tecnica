@@ -1,6 +1,6 @@
 ============================= test session starts =============================
 platform win32 -- Python 3.14.4, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\judia\Desktop\Prueba Tecnica\rag-agent-azure\rag-agent-azure
+rootdir: <repo>
 configfile: pyproject.toml
 testpaths: tests
 plugins: anyio-4.15.1
